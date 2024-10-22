@@ -23,7 +23,7 @@ Deployed on the Arbitrum Sepolia testnet, CanvasTrans leverages Ethereum’s lay
 
 ## Prerequisites
 Before setting up CanvasTrans, ensure you have the following:
-- **Node.js** (version 16.x or higher)
+- **Node.js** (version 18.x or higher)
 - **Foundry** (for compiling and deploying contracts)
 - **MetaMask** (for DApp interaction)
 - **Arbitrum Sepolia testnet ETH** (for deployment and testing)
@@ -35,14 +35,6 @@ Before setting up CanvasTrans, ensure you have the following:
 git clone https://github.com/chiemezie1/CanvasTransHub.git
 
 cd CanvasTransHub
-```
-### Install Dependencies
-
-bash **Copy code**
-
-```bash
-npm install
-
 ```
 
 ### Install Foundry
@@ -114,7 +106,7 @@ RPC_URL="https://sepolia-rollup.arbitrum.io/rpc"
 - Replace `PRIVATE_KEY` with your private key from MetaMask (ensure the key corresponds to the wallet that holds test ETH on the Arbitrum Sepolia network).
 
 ### Load the `.env`
-At the root of the directory (CanvasTransHub) and run the following command.
+At the root of the directory (CanvasTrans_dapp) and run the following command.
 
 ```bash
 source .env
