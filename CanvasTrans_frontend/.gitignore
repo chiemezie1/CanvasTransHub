@@ -1,0 +1,59 @@
+# Gradle
+.gradle/
+build/
+out/
+
+node_modules/
+
+# Eclipse
+bin/
+*.launch
+.settings/
+*.swp
+
+lib/ 
+cache/
+.env
+
+# Idea IntelliJ
+*.iml
+.idea/
+*.iws
+out/
+gen/
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Minecraft
+run/
+logs/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Jar files
+*.jar
+
+# Temporary files
+*.class
+*.war
+*.ear
+*.tmp
+
+# Compiled files
+*.class
+
+# Forge-specific
+config/
+debug.log
+crash-reports/
+
+test
+.next/
