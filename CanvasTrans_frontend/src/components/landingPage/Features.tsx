@@ -11,9 +11,9 @@ const features = [
   { icon: ArrowRight, title: 'Seamless Integration', description: 'Easy-to-use platform that works with your existing workflow.' },
 ]
 
-export default function Features() {
+const Features = () => {
   return (
-    <section id="features" className="py-20 px-4">
+    <section id="features" className="py-20 px-4 bg-muted dark:bg-gray-800">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold mb-12 text-center">Platform Features</h2>
         <div className="grid md:grid-cols-3 gap-8">
@@ -24,7 +24,7 @@ export default function Features() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="bg-card hover:bg-accent transition-colors duration-300">
+              <Card className="bg-card dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 transition-colors duration-300">
                 <CardHeader>
                   <CardTitle className="flex flex-col items-center">
                     <feature.icon className="w-8 h-8 mb-4 text-primary" />
@@ -32,7 +32,7 @@ export default function Features() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-center text-muted-foreground">{feature.description}</p>
+                  <p className="text-center text-muted-foreground dark:text-gray-300">{feature.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -42,3 +42,5 @@ export default function Features() {
     </section>
   )
 }
+
+export default Features;
