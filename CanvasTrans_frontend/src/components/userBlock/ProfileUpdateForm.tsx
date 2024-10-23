@@ -1,111 +1,116 @@
+'use client'
+
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Loader2, Edit2, User, FileText, Image } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { UserProfileData } from '@/types/types'
-import { mockSmartContract } from './mockSmartContract'
+import { motion } from 'framer-motion'
+import { User, FileText, Upload, Loader2 } from 'lucide-react'
 
 interface ProfileUpdateFormProps {
-  onProfileUpdate: (profile: UserProfileData) => void
+  onProfileUpdate: (data: any) => void
 }
 
 export default function ProfileUpdateForm({ onProfileUpdate }: ProfileUpdateFormProps) {
-  const [updating, setUpdating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<UserProfileData>()
+  const { register, handleSubmit, watch, formState: { errors } } = useForm()
+  const [loading, setLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
-  const onSubmit = async (data: UserProfileData) => {
-    setUpdating(true)
-    setError(null)
-    try {
-      const result = await mockSmartContract.updateProfile(data.username, data.bio, data.profilePicture)
-      if (result.success) {
-        onProfileUpdate(data)
-        reset()
-      } else {
-        setError("Failed to update profile. Please try again.")
+  const watchUsername = watch('username', '')
+  const watchBio = watch('bio', '')
+
+  const onSubmit = async (data: any) => {
+    setLoading(true)
+    // Simulating blockchain interaction
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    onProfileUpdate(data)
+    setLoading(false)
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
       }
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      setError("An unexpected error occurred. Please try again later.")
-    } finally {
-      setUpdating(false)
+      reader.readAsDataURL(file)
     }
   }
 
   return (
-    <Card className="bg-gray-800 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-purple-400">Update Profile</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username" className="text-gray-200">Username</Label>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex-1 space-y-4">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Username
+            </label>
             <div className="relative">
-              <User className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
                 id="username"
                 {...register('username', { required: 'Username is required' })}
-                className="pl-8 bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="New Username"
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Your username"
               />
             </div>
-            {errors.username && <p className="text-red-500 text-sm">{errors.username.message}</p>}
+            {errors.username && <p className="mt-1 text-sm text-error">{errors.username.message as string}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="bio" className="text-gray-200">Bio</Label>
+          <div>
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Bio
+            </label>
             <div className="relative">
-              <FileText className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-              <Textarea
+              <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <textarea
                 id="bio"
                 {...register('bio')}
-                className="pl-8 bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="New Bio"
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows={4}
+                placeholder="Tell us about yourself"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="profilePicture" className="text-gray-200">Profile Picture URL</Label>
-            <div className="relative">
-              <Image className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                id="profilePicture"
-                {...register('profilePicture')}
-                className="pl-8 bg-gray-700 border-gray-600 text-gray-100 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Profile Picture URL"
-              />
-            </div>
-          </div>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <Button
-            type="submit"
-            disabled={updating}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-200"
-          >
-            {updating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Updating...
-              </>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mb-4">
+            {imagePreview ? (
+              <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <>
-                <Edit2 className="w-4 h-4 mr-2" />
-                Update Profile
-              </>
+              <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400 dark:text-gray-500">
+                {watchUsername.charAt(0).toUpperCase() || '?'}
+              </div>
             )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          </div>
+          <label htmlFor="profileImage" className="cursor-pointer bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-full inline-flex items-center transition duration-300">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Image
+            <input
+              id="profileImage"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+          </label>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">IPFS upload will be implemented later</p>
+        </div>
+      </div>
+      <motion.button
+        type="submit"
+        disabled={loading}
+        className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="animate-spin mr-2 h-5 w-5" />
+            Updating Profile
+          </>
+        ) : (
+          'Update Profile'
+        )}
+      </motion.button>
+    </form>
   )
 }

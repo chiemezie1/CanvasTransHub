@@ -14,7 +14,7 @@ export default function Footer() {
             <CanvasTransLogo />
             <span className="ml-2 text-xl font-bold text-primary-foreground">CanvasTrans</span>
           </div>
-          <nav className="flex gap-4 mb-4 md:mb-0 text-md font-bold">
+          <nav className="flex gap-4 mb-4 md:mb-0 text-base font-ssemibold">
             <Link href="#" className=" text-muted-foreground hover:text-primary transition-colors">
               Terms of Service
             </Link>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 
 const Hero = () => {
   return (
-    <section className="pt-32 pb-20 px-4">
+    <section className="pt-8 sm:pt-32 pb-20 px-4">
       <div className="container mx-auto text-center">
         <motion.h1 
           className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
