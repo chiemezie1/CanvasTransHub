@@ -1,5 +1,4 @@
-import { Image, FileText, Film, Filter } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+import { Image, FileText, Film } from 'lucide-react'
 
 interface FilterBarProps {
   filter: 'all' | 'image' | 'text' | 'video'
@@ -8,39 +7,50 @@ interface FilterBarProps {
 
 export default function FilterBar({ filter, setFilter }: FilterBarProps) {
   return (
-    <div className="flex justify-center space-x-2">
-      <Button
-        variant={filter === 'all' ? 'default' : 'outline'}
+    <div className="flex justify-center space-x-4 mb-6">
+      <button
         onClick={() => setFilter('all')}
-        className="bg-gray-700 hover:bg-gray-600"
+        className={`px-4 py-2 rounded-full ${
+          filter === 'all'
+            ? 'bg-primary text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+        }`}
       >
-        <Filter className="w-4 h-4 mr-2" />
         All
-      </Button>
-      <Button
-        variant={filter === 'image' ? 'default' : 'outline'}
+      </button>
+      <button
         onClick={() => setFilter('image')}
-        className="bg-gray-700 hover:bg-gray-600"
+        className={`px-4 py-2 rounded-full flex items-center ${
+          filter === 'image'
+            ? 'bg-primary text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+        }`}
       >
-        <Image className="w-4 h-4 mr-2" />
+        <Image className="w-4 h-4 mr-2 hidden sm:inline-block" />
         Images
-      </Button>
-      <Button
-        variant={filter === 'text' ? 'default' : 'outline'}
+      </button>
+      <button
         onClick={() => setFilter('text')}
-        className="bg-gray-700 hover:bg-gray-600"
+        className={`px-4 py-2 rounded-full flex items-center ${
+          filter === 'text'
+            ? 'bg-primary text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+        }`}
       >
-        <FileText className="w-4 h-4 mr-2" />
+        <FileText className="w-4 h-4 mr-2 hidden sm:inline-block" />
         Text
-      </Button>
-      <Button
-        variant={filter === 'video' ? 'default' : 'outline'}
+      </button>
+      <button
         onClick={() => setFilter('video')}
-        className="bg-gray-700 hover:bg-gray-600"
+        className={`px-4 py-2 rounded-full flex items-center ${
+          filter === 'video'
+            ? 'bg-primary text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+        }`}
       >
-        <Film className="w-4 h-4 mr-2" />
+        <Film className="w-4 h-4 mr-2 hidden sm:inline-block" />
         Videos
-      </Button>
+      </button>
     </div>
   )
 }

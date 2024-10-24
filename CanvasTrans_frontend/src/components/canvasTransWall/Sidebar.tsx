@@ -1,64 +1,50 @@
-import { X } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
-import { Block } from './types'
+import { useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
+
+interface Block {
+  id: string
+  name: string
+}
 
 interface SidebarProps {
   blocks: Block[]
   selectedBlock: string | null
   setSelectedBlock: (blockId: string | null) => void
   isOpen: boolean
-  onClose: () => void
+  onToggle: () => void
 }
 
-export default function Sidebar({ blocks, selectedBlock, setSelectedBlock, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ blocks, selectedBlock, setSelectedBlock, isOpen, onToggle }: SidebarProps) {
   return (
-    <>
-      <div className="w-64 bg-gray-800 p-4 hidden md:block">
-        <h2 className="text-xl font-bold mb-4 text-purple-400">Blocks</h2>
+    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Blocks</h2>
+        <button onClick={onToggle} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      </div>
+      <nav className="mt-4">
         <ul>
-          {blocks.map(block => (
+          <li>
+            <button
+              onClick={() => setSelectedBlock(null)}
+              className={`w-full text-left px-4 py-2 ${!selectedBlock ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            >
+              All Blocks
+            </button>
+          </li>
+          {blocks.map((block) => (
             <li key={block.id}>
-              <Button
-                variant="ghost"
-                className={`w-full justify-start text-left ${selectedBlock === block.id ? 'bg-purple-600' : ''}`}
+              <button
                 onClick={() => setSelectedBlock(block.id)}
+                className={`w-full text-left px-4 py-2 ${selectedBlock === block.id ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
               >
                 {block.name}
-              </Button>
+              </button>
             </li>
           ))}
         </ul>
-      </div>
-
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent side="left" className="w-64 bg-gray-800 p-4">
-          <SheetHeader>
-            <SheetTitle className="text-xl font-bold text-purple-400">Blocks</SheetTitle>
-            <SheetClose asChild>
-              <Button variant="ghost" size="icon" className="absolute right-4 top-4">
-                <X className="h-4 w-4" />
-              </Button>
-            </SheetClose>
-          </SheetHeader>
-          <ul className="mt-4">
-            {blocks.map(block => (
-              <li key={block.id}>
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start text-left ${selectedBlock === block.id ? 'bg-purple-600' : ''}`}
-                  onClick={() => {
-                    setSelectedBlock(block.id)
-                    onClose()
-                  }}
-                >
-                  {block.name}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </SheetContent>
-      </Sheet>
-    </>
+      </nav>
+    </div>
   )
 }

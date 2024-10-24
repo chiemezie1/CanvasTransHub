@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Menu } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+'use client'
+
+import { useState, useEffect } from 'react'
+import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import FilterBar from './FilterBar'
-import TransItem from './TransItem'
-import TransItemModal from './TransItemModal'
-import { CanvasTransItem, Block } from './types'
+import TransactionPost from './TransactionPost'
+import CreateTransModal from './CreateTransModal'
+import { CanvasTransItem, Block } from '@/types/types'
 
 const mockData: CanvasTransItem[] = [
   {
@@ -21,7 +21,8 @@ const mockData: CanvasTransItem[] = [
     likes: 150,
     timestamp: Date.now() - 86400000,
     totalDonations: 0.5,
-    contentType: 'image'
+    contentType: 'image',
+    blockId: '1'
   },
   {
     id: '2',
@@ -35,27 +36,76 @@ const mockData: CanvasTransItem[] = [
     likes: 75,
     timestamp: Date.now() - 172800000,
     totalDonations: 0.2,
-    contentType: 'text'
+    contentType: 'text',
+    blockId: '2'
   },
-  // Add more mock data as needed
+  {
+    id: '3',
+    ipfsHash: 'Qm...3',
+    title: 'NFT Revolution',
+    description: 'A video exploring the rise of NFTs in the art world.',
+    creator: {
+      address: '0x9012...3456',
+      name: 'CryptoVlogger'
+    },
+    likes: 200,
+    timestamp: Date.now() - 259200000,
+    totalDonations: 0.8,
+    contentType: 'video',
+    blockId: '3'
+  }
 ]
 
 const mockBlocks: Block[] = [
-  { id: '1', name: 'Digital Art' },
-  { id: '2', name: 'Web3 Essays' },
-  { id: '3', name: 'Crypto Memes' },
+  { 
+    id: '1', 
+    name: 'Digital Art', 
+    description: 'A collection of digital artworks',
+    owner: '0x1234...5678',
+    transactionIds: ['1']
+  },
+  { 
+    id: '2', 
+    name: 'Web3 Essays', 
+    description: 'Thought-provoking essays on Web3',
+    owner: '0x5678...9012',
+    transactionIds: ['2']
+  },
+  { 
+    id: '3', 
+    name: 'Crypto Videos', 
+    description: 'Educational videos about cryptocurrency',
+    owner: '0x9012...3456',
+    transactionIds: ['3']
+  },
 ]
 
 export default function CanvasTransWall() {
   const [items, setItems] = useState<CanvasTransItem[]>(mockData)
-  const [selectedItem, setSelectedItem] = useState<CanvasTransItem | null>(null)
   const [filter, setFilter] = useState<'all' | 'image' | 'text' | 'video'>('all')
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme')
+    if (storedTheme) {
+      setIsDarkMode(storedTheme === 'dark')
+      document.documentElement.classList.toggle('dark', storedTheme === 'dark')
+    }
+  }, [])
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode
+    setIsDarkMode(newDarkMode)
+    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light')
+    document.documentElement.classList.toggle('dark', newDarkMode)
+  }
 
   const filteredItems = items.filter(item => 
     (filter === 'all' || item.contentType === filter) &&
-    (!selectedBlock || item.id === selectedBlock)
+    (!selectedBlock || item.blockId === selectedBlock)
   )
 
   const handleLike = (id: string) => {
@@ -70,60 +120,49 @@ export default function CanvasTransWall() {
     ))
   }
 
+  const handleCreateTrans = (newItem: CanvasTransItem) => {
+    setItems([newItem, ...items])
+    setCreateModalOpen(false)
+  }
+
   return (
-    <div className="flex min-h-screen bg-gray-900 text-gray-100">
-      <Sidebar
-        blocks={mockBlocks}
-        selectedBlock={selectedBlock}
-        setSelectedBlock={setSelectedBlock}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div className="flex-1 p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-            <h1 className="text-3xl font-bold text-purple-400">CanvasTrans Wall</h1>
-          </div>
-
-          <FilterBar filter={filter} setFilter={setFilter} />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {filteredItems.map(item => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <TransItem
-                  item={item}
-                  onLike={handleLike}
-                  onDonate={handleDonate}
-                  onClick={() => setSelectedItem(item)}
-                />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {selectedItem && (
-        <TransItemModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          onLike={handleLike}
-          onDonate={handleDonate}
+    <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+      <div className="bg-background dark:bg-background-dark text-foreground dark:text-foreground-dark">
+        <Navbar 
+          onCreateClick={() => setCreateModalOpen(true)} 
+          onThemeToggle={toggleDarkMode}
+          onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         />
-      )}
+        <div className="flex">
+          <Sidebar
+            blocks={mockBlocks}
+            selectedBlock={selectedBlock}
+            setSelectedBlock={setSelectedBlock}
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+          />
+          <main className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+            <div className="container mx-auto px-4 py-8">
+              <FilterBar filter={filter} setFilter={setFilter} />
+              <div className="space-y-6 mt-6">
+                {filteredItems.map(item => (
+                  <TransactionPost
+                    key={item.id}
+                    item={item}
+                    onLike={handleLike}
+                    onDonate={handleDonate}
+                  />
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
+        <CreateTransModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onCreate={handleCreateTrans}
+        />
+      </div>
     </div>
   )
 }

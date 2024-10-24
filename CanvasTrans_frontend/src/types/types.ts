@@ -10,7 +10,16 @@ export interface CanvasTransItem {
   likes: number
   timestamp: number
   totalDonations: number
-  contentType: 'image' | 'text' | 'video'
+  contentType: 'text' | 'image' | 'video'
+  blockId: string
+}
+
+export interface Block {
+  id: string
+  name: string
+  description: string
+  owner: string
+  transactionIds: string[]
 }
 
 
@@ -29,10 +38,3 @@ export interface Transaction {
   timestamp: number
 }
 
-export interface Block {
-  id: string
-  name: string
-  description: string
-  owner: string
-  transactionIds: string[]
-}

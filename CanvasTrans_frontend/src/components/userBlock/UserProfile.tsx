@@ -62,7 +62,7 @@ export default function UserProfile() {
         </Link>
         <div>
         <Link href="/canvas-trans-hub" className="text-purple-700 bg-gray-300 font-semibold text-lg text-end mr-3 border-2 border-gray-600 rounded-lg px-2 py-3 ">
-        Explore Trans Hub
+        Trans Hub
         </Link>
         <button
             onClick={toggleDarkMode}
