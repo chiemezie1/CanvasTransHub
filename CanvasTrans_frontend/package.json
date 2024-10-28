@@ -29,6 +29,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@tanstack/react-query": "5.55.3",
     "@wagmi/core": "^2.13.4",
+    "axios": "^1.7.7",
     "class-variance-authority": "^0.7.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.11.9",

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { User, FileText, Upload, Loader2 } from 'lucide-react'
+import { uploadToPinata } from "@/lib/PinataService";
+import { updateProfile } from "@/contracts/contractInteractions";
 
 interface ProfileUpdateFormProps {
   onProfileUpdate: (data: any) => void
@@ -13,16 +15,32 @@ export default function ProfileUpdateForm({ onProfileUpdate }: ProfileUpdateForm
   const { register, handleSubmit, watch, formState: { errors } } = useForm()
   const [loading, setLoading] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
+  const [imageHash, setImageHash] = useState<string | null>(null)
 
   const watchUsername = watch('username', '')
   const watchBio = watch('bio', '')
 
   const onSubmit = async (data: any) => {
     setLoading(true)
-    // Simulating blockchain interaction
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    onProfileUpdate(data)
-    setLoading(false)
+
+    try {
+      // Upload image to Pinata and store the hash only
+      if (profileImageFile) {
+        const imageHash = await uploadToPinata(profileImageFile);
+        setImageHash(imageHash);
+        data.imageHash = imageHash;
+      }
+
+      await updateProfile(data.username, data.bio, data.imageHash);
+
+      // Call the onProfileUpdate callback with updated data
+      onProfileUpdate(data);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +49,7 @@ export default function ProfileUpdateForm({ onProfileUpdate }: ProfileUpdateForm
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
+        setProfileImageFile(file);
       }
       reader.readAsDataURL(file)
     }
@@ -74,11 +93,15 @@ export default function ProfileUpdateForm({ onProfileUpdate }: ProfileUpdateForm
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mb-4">
             {imagePreview ? (
-              <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+              <img src={imagePreview} alt="Profile preview" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400 dark:text-gray-500">
-                {watchUsername.charAt(0).toUpperCase() || '?'}
-              </div>
+              imageHash ? (
+                <img src={`https://gateway.pinata.cloud/ipfs/${imageHash}`} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400 dark:text-gray-500">
+                  {watchUsername.charAt(0).toUpperCase() || '?'}
+                </div>
+              )
             )}
           </div>
           <label htmlFor="profileImage" className="cursor-pointer bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-full inline-flex items-center transition duration-300">
@@ -92,7 +115,7 @@ export default function ProfileUpdateForm({ onProfileUpdate }: ProfileUpdateForm
               onChange={handleImageUpload}
             />
           </label>
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">IPFS upload will be implemented later</p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">IPFS upload</p>
         </div>
       </div>
       <motion.button
