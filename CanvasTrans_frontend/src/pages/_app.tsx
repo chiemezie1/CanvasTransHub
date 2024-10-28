@@ -3,6 +3,8 @@ import "@rainbow-me/rainbowkit/styles.css";
 import type { AppProps } from "next/app";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import { config as fontawesomeConfig } from "@fortawesome/fontawesome-svg-core";
+import { ThemeProvider } from 'next-themes'
+
 fontawesomeConfig.autoAddCss = false;
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,7 +20,9 @@ function MyApp({ Component, pageProps }: AppProps) {
 		<WagmiProvider config={config}>
 			<QueryClientProvider client={client}>
 				<RainbowKitProvider>
-					<Component {...pageProps} />
+					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+						<Component {...pageProps} />
+					</ThemeProvider>
 				</RainbowKitProvider>
 			</QueryClientProvider>
 		</WagmiProvider>

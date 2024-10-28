@@ -1,5 +1,3 @@
-// src/pages/HomePage.js
-
 import { useEffect, useState } from 'react'
 import Header from "@/components/Header"
 import Hero from "./Hero"
@@ -8,31 +6,24 @@ import HowItWorks from "./HowItWorks"
 import Creators from "./Creators"
 import TransactionFeed from './TransactionFeed'
 import Footer from "@/components/Footer"
-// import FloatingActionButton from './FloatingActionButton'
-
 
 const HomePage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('theme')
+    setIsDarkMode(storedTheme === 'dark')
+    document.documentElement.classList.toggle('dark', storedTheme === 'dark')
+  }, [])
+
   const toggleDarkMode = () => {
     setIsDarkMode(prev => !prev)
     document.documentElement.classList.toggle('dark')
+    localStorage.setItem('theme', isDarkMode ? 'light' : 'dark')
   }
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem('theme')
-    if (storedTheme) {
-      setIsDarkMode(storedTheme === 'dark')
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark')
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light')
-  }, [isDarkMode])
-
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
       <Header toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
       <main>
         <Hero />
@@ -42,8 +33,6 @@ const HomePage = () => {
         <Creators />
       </main>
       <Footer />
-      {/* <FloatingActionButton openWalletModal={openWalletModal} />
-       <WalletConnectModal isOpen={isWalletModalOpen} onClose={closeWalletModal} /> */}
     </div>
   )
 }

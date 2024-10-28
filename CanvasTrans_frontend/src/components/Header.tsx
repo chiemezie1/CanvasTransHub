@@ -36,8 +36,7 @@ export default function Header({ toggleDarkMode, isDarkMode }: HeaderProps) {
   const navItems = ['Features', 'How It Works', 'Creators'];
 
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-background/10 backdrop-blur-md border-b border-border' : ''}`}>
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+<header className={`sticky top-0 z-50 transition-all duration-300 bg-background dark:bg-gray-700 text-gray-800 ${isScrolled ? 'backdrop-blur-md border-b border-gray-200 dark:border-gray-800' : ''}`}>      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="flex items-center space-x-2 group">
           <CanvasTransLogo />
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">CanvasTrans</span>
@@ -162,3 +161,4 @@ export default function Header({ toggleDarkMode, isDarkMode }: HeaderProps) {
     </header>
   );
 }
+

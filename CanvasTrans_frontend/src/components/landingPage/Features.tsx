@@ -13,9 +13,9 @@ const features = [
 
 const Features = () => {
   return (
-    <section id="features" className="py-20 px-4 bg-muted dark:bg-gray-800">
+    <section id="features" className="py-20 px-4 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto">
-        <h2 className="text-3xl font-bold mb-12 text-center">Platform Features</h2>
+        <h2 className="text-3xl font-bold mb-12 text-center text-foreground dark:text-foreground-dark">Platform Features</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <motion.div
@@ -24,15 +24,15 @@ const Features = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="bg-card dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 transition-colors duration-300">
+              <Card className="bg-background dark:bg-background-dark hover:bg-primary/5 dark:hover:bg-primary-dark/5 transition-colors duration-300">
                 <CardHeader>
                   <CardTitle className="flex flex-col items-center">
-                    <feature.icon className="w-8 h-8 mb-4 text-primary" />
-                    <span>{feature.title}</span>
+                    <feature.icon className="w-12 h-12 mb-4 text-primary dark:text-primary-light" />
+                    <span className="text-foreground dark:text-foreground-dark">{feature.title}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-center text-muted-foreground dark:text-gray-300">{feature.description}</p>
+                  <p className="text-center text-gray-600 dark:text-gray-300">{feature.description}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -43,4 +43,4 @@ const Features = () => {
   )
 }
 
-export default Features;
+export default Features

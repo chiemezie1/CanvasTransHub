@@ -1,5 +1,3 @@
-// src/components/Creators.js
-
 import { motion } from 'framer-motion'
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -11,9 +9,9 @@ const creators = [
 
 const Creators = () => {
   return (
-    <section id="creators" className="py-20 px-4 bg-muted dark:bg-gray-800">
+    <section id="creators" className="py-20 px-4 bg-background dark:bg-background-dark">
       <div className="container mx-auto">
-        <h2 className="text-3xl font-bold mb-12 text-center">Top Creators</h2>
+        <h2 className="text-3xl font-bold mb-12 text-center text-foreground dark:text-foreground-dark">Top Creators</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {creators.map((creator) => (
             <motion.div
@@ -22,11 +20,11 @@ const Creators = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <Card className="bg-card dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 transition-colors duration-300">
-                <CardContent className="flex flex-col items-center">
+              <Card className="bg-gray-50 dark:bg-gray-800 hover:bg-primary/10 dark:hover:bg-primary-dark/10 transition-colors duration-300">
+                <CardContent className="flex flex-col items-center p-6">
                   <img src={creator.avatar} alt={`${creator.name}'s avatar`} className="w-24 h-24 rounded-full mb-4" />
-                  <h3 className="text-xl font-semibold">{creator.name}</h3>
-                  <p className="text-muted-foreground dark:text-gray-300">{creator.earnings}</p>
+                  <h3 className="text-xl font-semibold text-foreground dark:text-foreground-dark">{creator.name}</h3>
+                  <p className="text-primary dark:text-primary-light font-medium mt-2">{creator.earnings}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -37,4 +35,4 @@ const Creators = () => {
   )
 }
 
-export default Creators;
+export default Creators

@@ -1,5 +1,3 @@
-// src/components/HowItWorks.js
-
 import { motion } from 'framer-motion'
 
 const steps = [
@@ -12,9 +10,8 @@ const HowItWorks = () => {
   return (
     <section id="how-it-works" className="py-20 px-4 bg-gray-100 dark:bg-gray-900">
       <div className="container mx-auto">
-        {/* Outer Box for the whole section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h2 className="text-3xl font-bold mb-12 text-center">How It Works</h2>
+        <div className="bg-background dark:bg-background-dark rounded-lg shadow-lg p-8">
+          <h2 className="text-3xl font-bold mb-12 text-center text-foreground dark:text-foreground-dark">How It Works</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {steps.map((item) => (
               <motion.div
@@ -24,12 +21,12 @@ const HowItWorks = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: item.step * 0.2 }}
               >
-                <div className="p-6 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
                   <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl font-bold text-primary-foreground">{item.step}</span>
+                    <span className="text-2xl font-bold text-white">{item.step}</span>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground dark:text-gray-300">{item.description}</p>
+                  <h3 className="text-xl font-semibold mb-2 text-foreground dark:text-foreground-dark">{item.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{item.description}</p>
                 </div>
               </motion.div>
             ))}
