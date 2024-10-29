@@ -30,9 +30,9 @@ contract CanvasTrans {
     struct Block {
         string name;
         string description;
+        string category;
         address owner;
         uint256[] transactionIds;
-        string category;
     }
 
     // Structure for Comments
@@ -240,17 +240,12 @@ contract CanvasTrans {
 
         uint256 totalDonations = item.totalDonations;
         uint256 creatorAmount = (totalDonations * 95) / 100; // 95% to creator
-        uint256 adminAmount = totalDonations - creatorAmount; // 5% to admin
 
         item.totalDonations = 0;
 
         // Transfer 95% to the creator
         (bool successCreator, ) = payable(msg.sender).call{value: creatorAmount}("");
         require(successCreator, "Transfer to creator failed");
-
-        // Transfer 5% to the admin
-        (bool successAdmin, ) = payable(admin).call{value: adminAmount}("");
-        require(successAdmin, "Transfer to admin failed");
 
         emit DonationsWithdrawn(msg.sender, creatorAmount);
     }

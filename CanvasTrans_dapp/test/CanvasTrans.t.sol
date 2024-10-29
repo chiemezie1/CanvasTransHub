@@ -13,7 +13,7 @@ contract CanvasTransTest is Test {
 
     function setUp() public {
         // Set up accounts for testing
-        admin = address(this); // Assuming the test contract is the admin
+        admin = address(this);
         user1 = address(0x1);
         user2 = address(0x2);
 
@@ -25,46 +25,51 @@ contract CanvasTransTest is Test {
         string memory ipfsHash = "QmT1...";
         string memory title = "Test Title";
         string memory description = "Test Description";
+        CanvasTrans.MediaType mediaType = CanvasTrans.MediaType.Text;
 
         // User1 creates a transaction
         vm.prank(user1);
-        canvasTrans.createTransaction(ipfsHash, title, description);
+        canvasTrans.createTransaction(ipfsHash, title, description, mediaType);
 
         // Check that the transaction was created
-        (string memory returnedIpfsHash, string memory returnedTitle, string memory returnedDescription, address creator, , , ) = canvasTrans.transactions(1);
+        (string memory returnedIpfsHash, string memory returnedTitle, string memory returnedDescription, CanvasTrans.MediaType returnedMediaType, address creator, , , ) = canvasTrans.transactions(1);
         assertEq(returnedIpfsHash, ipfsHash);
         assertEq(returnedTitle, title);
         assertEq(returnedDescription, description);
+        assertEq(uint(returnedMediaType), uint(mediaType));
         assertEq(creator, user1);
     }
-
+    
     function testCreateBlock() public {
         string memory name = "Test Block";
         string memory description = "Block Description";
+        string memory category = "Art";
 
         // User1 creates a block
         vm.prank(user1);
-        canvasTrans.createBlock(name, description);
+        canvasTrans.createBlock(name, description, category);
 
         // Check that the block was created
-        (string memory returnedName, string memory returnedDescription, address owner) = canvasTrans.blocks(1);
+        (string memory returnedName, string memory returnedDescription, string memory returnedCategory, address owner) = canvasTrans.blocks(1);
         assertEq(returnedName, name);
         assertEq(returnedDescription, description);
+        assertEq(returnedCategory, category);
         assertEq(owner, user1);
     }
 
-
     function testLikeTransaction() public {
+        CanvasTrans.MediaType mediaType = CanvasTrans.MediaType.Text;
+
         // User1 creates a transaction
         vm.prank(user1);
-        canvasTrans.createTransaction("QmT1...", "Test Title", "Test Description");
+        canvasTrans.createTransaction("QmT1...", "Test Title", "Test Description", mediaType);
 
         // User2 likes the transaction
         vm.prank(user2);
         canvasTrans.likeTransaction(1);
 
         // Check that the like was recorded
-        ( , , , , uint256 likes, , ) = canvasTrans.transactions(1);
+        ( , , , , , uint256 likes, , ) = canvasTrans.transactions(1);
         assertEq(likes, 1);
     }
 
@@ -94,10 +99,12 @@ contract CanvasTransTest is Test {
         assertEq(profilePicture, "NewPicture1");
     }
 
-     function testDonateToTransaction() public {
+    function testDonateToTransaction() public {
+        CanvasTrans.MediaType mediaType = CanvasTrans.MediaType.Text;
+
         // User1 creates a transaction
         vm.prank(user1);
-        canvasTrans.createTransaction("QmT1...", "Test Title", "Test Description");
+        canvasTrans.createTransaction("QmT1...", "Test Title", "Test Description", mediaType);
 
         // User2 donates to the transaction
         vm.prank(user2);
@@ -105,14 +112,16 @@ contract CanvasTransTest is Test {
         canvasTrans.donateToTransaction{value: 0.5 ether}(1);
 
         // Check that the donation was recorded
-        (, , , , , , uint256 totalDonations) = canvasTrans.transactions(1);
+        (, , , , , , , uint256 totalDonations) = canvasTrans.transactions(1);
         assertEq(totalDonations, 0.5 ether);
     }
     
     function testWithdrawDonations() public {
+        CanvasTrans.MediaType mediaType = CanvasTrans.MediaType.Text;
+
         // User1 creates a transaction
         vm.prank(user1);
-        canvasTrans.createTransaction("QmT1...", "Test Title", "Test Description");
+        canvasTrans.createTransaction("QmT1...", "Test Title", "Test Description", mediaType);
 
         // User2 donates to the transaction
         vm.prank(user2);
@@ -120,12 +129,11 @@ contract CanvasTransTest is Test {
         canvasTrans.donateToTransaction{value: 1 ether}(1);
 
         // Check that the donation was recorded
-        (, , , , , , uint256 totalDonationsBefore) = canvasTrans.transactions(1);
+        (, , , , , , , uint256 totalDonationsBefore) = canvasTrans.transactions(1);
         assertEq(totalDonationsBefore, 1 ether);
 
         // Capture initial balances
         uint256 initialCreatorBalance = user1.balance;
-        uint256 initialAdminBalance = admin.balance;
 
         // User1 (the creator) withdraws donations
         vm.prank(user1);
@@ -133,18 +141,15 @@ contract CanvasTransTest is Test {
 
         // Calculate expected amounts
         uint256 expectedCreatorAmount = (1 ether * 95) / 100; // 95% to creator
-        uint256 expectedAdminAmount = 1 ether - expectedCreatorAmount; // 5% to admin
 
         // Get actual balances after withdrawal
         uint256 finalCreatorBalance = user1.balance;
-        uint256 finalAdminBalance = admin.balance;
-
 
         // Assert the creator's balance increased by the expected amount
         assertEq(finalCreatorBalance, initialCreatorBalance + expectedCreatorAmount);
 
         // Ensure total donations reset to 0 after withdrawal
-        (, , , , , , uint256 totalDonationsAfter) = canvasTrans.transactions(1);
+        (, , , , , , , uint256 totalDonationsAfter) = canvasTrans.transactions(1);
         assertEq(totalDonationsAfter, 0);
     }
     
@@ -166,5 +171,4 @@ contract CanvasTransTest is Test {
         uint256 finalAdminBalance = admin.balance;
         assertEq(finalAdminBalance, initialAdminBalance);
     }
-
 }
