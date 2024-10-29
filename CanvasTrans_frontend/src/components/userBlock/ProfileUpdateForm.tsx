@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
 import { User, FileText, Upload, Loader2 } from 'lucide-react'
-import { uploadToPinata } from "@/lib/PinataService";
+import  uploadToPinata from "@/lib/PinataService";
 import { updateProfile } from "@/contracts/contractInteractions";
 
 interface ProfileUpdateFormProps {

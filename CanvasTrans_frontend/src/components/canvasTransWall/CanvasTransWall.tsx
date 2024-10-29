@@ -14,10 +14,7 @@ const mockData: CanvasTransItem[] = [
     ipfsHash: 'Qm...1',
     title: 'Digital Dreamscape',
     description: 'A surreal landscape created entirely in digital space.',
-    creator: {
-      address: '0x1234...5678',
-      name: 'CryptoArtist'
-    },
+    creator: '0x1234...5678',
     likes: 150,
     timestamp: Date.now() - 86400000,
     totalDonations: 0.5,
@@ -29,10 +26,7 @@ const mockData: CanvasTransItem[] = [
     ipfsHash: 'Qm...2',
     title: 'The Future of Web3',
     description: 'An essay on the potential impact of Web3 technologies.',
-    creator: {
-      address: '0x5678...9012',
-      name: 'BlockchainPhilosopher'
-    },
+    creator: '0x5678...9012',
     likes: 75,
     timestamp: Date.now() - 172800000,
     totalDonations: 0.2,
@@ -44,10 +38,7 @@ const mockData: CanvasTransItem[] = [
     ipfsHash: 'Qm...3',
     title: 'NFT Revolution',
     description: 'A video exploring the rise of NFTs in the art world.',
-    creator: {
-      address: '0x9012...3456',
-      name: 'CryptoVlogger'
-    },
+    creator: '0x9012...3456',
     likes: 200,
     timestamp: Date.now() - 259200000,
     totalDonations: 0.8,
@@ -160,7 +151,6 @@ export default function CanvasTransWall() {
         <CreateTransModal
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
-          onCreate={handleCreateTrans}
         />
       </div>
     </div>

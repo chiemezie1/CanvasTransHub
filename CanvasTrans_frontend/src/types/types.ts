@@ -3,15 +3,12 @@ export interface CanvasTransItem {
   ipfsHash: string
   title: string
   description: string
-  creator: {
-    address: string
-    name: string
-  }
+  creator: string
   likes: number
   timestamp: number
   totalDonations: number
   contentType: 'text' | 'image' | 'video'
-  blockId: string
+  blockId?: string
 }
 
 export interface Block {
