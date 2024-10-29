@@ -7,6 +7,7 @@ contract CanvasTrans {
 
     // Structure for a Canvas Transaction
     struct CanvasTransItem {
+        uint256 id;
         string ipfsHash;
         string title;
         string description;
@@ -28,6 +29,7 @@ contract CanvasTrans {
 
     // Structure for a Block (formerly Collection)
     struct Block {
+        uint256 id;
         string name;
         string description;
         string category;
@@ -97,6 +99,7 @@ contract CanvasTrans {
 
         transactionCounter++;
         transactions[transactionCounter] = CanvasTransItem({
+            id: transactionCounter,
             ipfsHash: _ipfsHash,
             title: _title,
             description: _description,
@@ -116,6 +119,7 @@ contract CanvasTrans {
     function createBlock(string memory _name, string memory _description, string memory _category) external {
         blockCounter++;
         blocks[blockCounter] = Block({
+            id: blockCounter,
             name: _name,
             description: _description,
             owner: msg.sender,
