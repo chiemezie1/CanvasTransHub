@@ -3,11 +3,14 @@ pragma solidity ^0.8.9;
 
 contract CanvasTrans {
 
+    enum MediaType { Text, Image, Video }
+
     // Structure for a Canvas Transaction
     struct CanvasTransItem {
         string ipfsHash;
         string title;
         string description;
+        MediaType mediaType;
         address creator;
         uint256 likes;
         uint256 timestamp;
@@ -29,6 +32,7 @@ contract CanvasTrans {
         string description;
         address owner;
         uint256[] transactionIds;
+        string category;
     }
 
     // Structure for Comments
@@ -71,7 +75,7 @@ contract CanvasTrans {
     }
 
     receive() external payable {
-    //  receive function to handle incoming ETH.
+        // Receive function to handle incoming ETH.
     }
     
     // Modifier to restrict functions to the admin
@@ -87,7 +91,7 @@ contract CanvasTrans {
     }
 
     // Function to create a new Canvas Transaction
-    function createTransaction(string memory _ipfsHash, string memory _title, string memory _description) external {
+    function createTransaction(string memory _ipfsHash, string memory _title, string memory _description, MediaType _mediaType) external {
         require(bytes(_title).length > 0, "Title cannot be empty");
         require(bytes(_description).length > 0, "Description cannot be empty");
 
@@ -96,6 +100,7 @@ contract CanvasTrans {
             ipfsHash: _ipfsHash,
             title: _title,
             description: _description,
+            mediaType: _mediaType,
             creator: msg.sender,
             likes: 0,
             timestamp: block.timestamp,
@@ -108,14 +113,14 @@ contract CanvasTrans {
     }
 
     // Function to create a new Block
-    function createBlock(string memory _name, string memory _description) external {
-        require(bytes(_name).length > 0, "Block name cannot be empty");
-        blockCounter++; 
+    function createBlock(string memory _name, string memory _description, string memory _category) external {
+        blockCounter++;
         blocks[blockCounter] = Block({
             name: _name,
             description: _description,
             owner: msg.sender,
-            transactionIds: new uint256[](0)
+            transactionIds: new uint256[](0),
+            category: _category 
         });
 
         userBlocks[msg.sender].push(blockCounter);
@@ -123,14 +128,21 @@ contract CanvasTrans {
         emit BlockCreated(blockCounter, msg.sender);
     }
 
-    // Function to add a Canvas Transaction to a Block
-    function addTransactionToBlock(uint256 _transactionId, uint256 _blockId) external onlyBlockOwner(_blockId) {
+    // Function to add a transaction to a block
+    function addTransactionToBlock(uint256 _blockId, uint256 _transactionId) external onlyBlockOwner(_blockId) {
         require(transactions[_transactionId].creator != address(0), "Transaction does not exist");
-        require(transactions[_transactionId].creator == msg.sender, "You can only add your own transactions to a block");
-
         blocks[_blockId].transactionIds.push(_transactionId);
 
         emit TransactionAddedToBlock(_transactionId, _blockId, msg.sender);
+    }
+
+    // Function to get all blocks
+    function getAllBlocks() external view returns (Block[] memory) {
+        Block[] memory allBlocks = new Block[](blockCounter);
+        for (uint256 i = 1; i <= blockCounter; i++) {
+            allBlocks[i - 1] = blocks[i];
+        }
+        return allBlocks;
     }
 
     // Function to update the admin address
@@ -227,13 +239,18 @@ contract CanvasTrans {
         require(item.totalDonations > 0, "No donations available for withdrawal");
 
         uint256 totalDonations = item.totalDonations;
-        uint256 creatorAmount = (totalDonations * 95) / 100;
+        uint256 creatorAmount = (totalDonations * 95) / 100; // 95% to creator
+        uint256 adminAmount = totalDonations - creatorAmount; // 5% to admin
 
         item.totalDonations = 0;
 
         // Transfer 95% to the creator
         (bool successCreator, ) = payable(msg.sender).call{value: creatorAmount}("");
         require(successCreator, "Transfer to creator failed");
+
+        // Transfer 5% to the admin
+        (bool successAdmin, ) = payable(admin).call{value: adminAmount}("");
+        require(successAdmin, "Transfer to admin failed");
 
         emit DonationsWithdrawn(msg.sender, creatorAmount);
     }
