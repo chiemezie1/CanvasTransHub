@@ -13,6 +13,7 @@ contract CanvasTrans {
         string description;
         MediaType mediaType;
         address creator;
+        uint256 transBlock;
         uint256 likes;
         uint256 timestamp;
         uint256 totalDonations;
@@ -105,6 +106,7 @@ contract CanvasTrans {
             description: _description,
             mediaType: _mediaType,
             creator: msg.sender,
+            transBlock: 0,
             likes: 0,
             timestamp: block.timestamp,
             totalDonations: 0
@@ -136,6 +138,8 @@ contract CanvasTrans {
     function addTransactionToBlock(uint256 _blockId, uint256 _transactionId) external onlyBlockOwner(_blockId) {
         require(transactions[_transactionId].creator != address(0), "Transaction does not exist");
         blocks[_blockId].transactionIds.push(_transactionId);
+        
+        transactions[_transactionId].transBlock = _blockId;
 
         emit TransactionAddedToBlock(_transactionId, _blockId, msg.sender);
     }
@@ -300,17 +304,6 @@ contract CanvasTrans {
         return allTransactions;
     }
 
-    // Fetch block details
-    function getBlockDetails(uint256 _blockId) external view returns (Block memory) {
-        require(blocks[_blockId].owner != address(0), "Block does not exist");
-        return blocks[_blockId];
-    }
-
-    // Fetch user profile
-    function getUserProfile(address _user) external view returns (UserProfile memory) {
-        return userProfiles[_user];
-    }
-
     // Fetch followers of a user
     function getFollowers(address _user) external view returns (address[] memory) {
         return userProfiles[_user].followers;
@@ -327,29 +320,8 @@ contract CanvasTrans {
         return transactionComments[_transactionId];
     }
 
-    // Fetch user feed, including transactions from followed users
-    function getUserFeed(address _user) external view returns (CanvasTransItem[] memory) {
-        uint256 count = 0;
-        for (uint256 i = 1; i <= transactionCounter; i++) {
-            address creator = transactions[i].creator;
-            if (creator == _user || isFollowing(_user, creator)) {
-                count++;
-            }
-        }
-
-        CanvasTransItem[] memory feed = new CanvasTransItem[](count);
-        uint256 index = 0;
-        for (uint256 i = 1; i <= transactionCounter; i++) {
-            address creator = transactions[i].creator;
-            if (creator == _user || isFollowing(_user, creator)) {
-                feed[index] = transactions[i];
-                index++;
-            }
-        }
-        return feed;
-    }
     // Helper function to check if one user is following another
-    function isFollowing(address _follower, address _following) internal view returns (bool) {
+    function isFollowing(address _follower, address _following) public view returns (bool) {
         address[] memory followingList = userProfiles[_follower].following;
         for (uint256 i = 0; i < followingList.length; i++) {
             if (followingList[i] == _following) {

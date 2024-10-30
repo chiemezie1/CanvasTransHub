@@ -32,14 +32,28 @@ contract CanvasTransTest is Test {
         canvasTrans.createTransaction(ipfsHash, title, description, mediaType);
 
         // Check that the transaction was created
-        (uint256 returnedId, string memory returnedIpfsHash, string memory returnedTitle, string memory returnedDescription, CanvasTrans.MediaType returnedMediaType, address creator, , , ) = canvasTrans.transactions(1);
-        assertEq(returnedId, 1); // Check the ID
+        (
+            uint256 returnedId,
+            string memory returnedIpfsHash,
+            string memory returnedTitle,
+            string memory returnedDescription,
+            CanvasTrans.MediaType returnedMediaType,
+            address creator,
+            uint256 transBlock,
+            uint256 likes,
+            uint256 timestamp,
+            uint256 totalDonations
+        ) = canvasTrans.transactions(1);
+
+        assertEq(returnedId, 1);
         assertEq(returnedIpfsHash, ipfsHash);
         assertEq(returnedTitle, title);
         assertEq(returnedDescription, description);
         assertEq(uint(returnedMediaType), uint(mediaType));
         assertEq(creator, user1);
+        assertEq(transBlock, 0);
     }
+
     
     function testCreateBlock() public {
         string memory name = "Test Block";
@@ -71,7 +85,7 @@ contract CanvasTransTest is Test {
         canvasTrans.likeTransaction(1);
 
         // Check that the like was recorded
-        ( , , , , , , uint256 likes, , ) = canvasTrans.transactions(1);
+        ( , , , , , , , uint256 likes, , ) = canvasTrans.transactions(1);
         assertEq(likes, 1);
     }
 
@@ -114,7 +128,7 @@ contract CanvasTransTest is Test {
         canvasTrans.donateToTransaction{value: 0.5 ether}(1);
 
         // Check that the donation was recorded
-        (, , , , , , , , uint256 totalDonations) = canvasTrans.transactions(1);
+        (, , , , , , , , , uint256 totalDonations) = canvasTrans.transactions(1);
         assertEq(totalDonations, 0.5 ether);
     }
     
@@ -131,7 +145,7 @@ contract CanvasTransTest is Test {
         canvasTrans.donateToTransaction{value: 1 ether}(1);
 
         // Check that the donation was recorded
-        (, , , , , , , , uint256 totalDonationsBefore) = canvasTrans.transactions(1);
+        (, , , , , , , , , uint256 totalDonationsBefore) = canvasTrans.transactions(1);
         assertEq(totalDonationsBefore, 1 ether);
 
         // Capture initial balances
@@ -151,7 +165,7 @@ contract CanvasTransTest is Test {
         assertEq(finalCreatorBalance, initialCreatorBalance + expectedCreatorAmount);
 
         // Ensure total donations reset to 0 after withdrawal
-        (, , , , , , , , uint256 totalDonationsAfter) = canvasTrans.transactions(1);
+        (, , , , , , , , , uint256 totalDonationsAfter) = canvasTrans.transactions(1);
         assertEq(totalDonationsAfter, 0);
     }
     
