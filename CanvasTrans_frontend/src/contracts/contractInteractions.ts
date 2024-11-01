@@ -2,40 +2,50 @@ import config from "../wagmi";
 import { readContract, writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import { ABI, deployedAddress } from "./deployed-contract";
 
+enum MediaType {
+    Text = 0,
+    Image = 1,
+    Video = 2
+}
+
 // Function to create a new transaction
-export const createTransaction = async (ipfsHash: string, title: string, description: string) => {
+export const createTransaction = async (ipfsHash: string, title: string, description: string, mediaType: MediaType) => {
     try {
+        // Write the transaction
         const txHash = await writeContract(config, {
             address: deployedAddress,
             abi: ABI,
             functionName: "createTransaction",
-            args: [ipfsHash, title, description],
+            args: [ipfsHash, title, description, MediaType[mediaType] as unknown as number],
         });
 
+        // Wait for the transaction receipt
         const transaction = await waitForTransactionReceipt(config, {
             hash: txHash,
         });
 
+        // Check the transaction status
         if (transaction.status === "reverted") {
             alert("Transaction creation failed. Transaction reverted.");
         } else {
             alert("Transaction created successfully!");
-            return transaction 
+            return transaction;
         }
     } catch (error) {
         console.error("Error creating transaction:", error);
-        alert("Transaction creation failed.");
+        alert("Transaction creation failed. Please check the console for more details.");
     }
 };
 
+
 // Function to create a new block
-export const createBlock = async (_name: string, _description: string) => {
+export const createBlock = async (_name: string, _description: string, _category: string) => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
             abi: ABI,
             functionName: "createBlock",
-            args: [_name, _description],
+            args: [_name, _description, _category],
         });
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
@@ -43,7 +53,7 @@ export const createBlock = async (_name: string, _description: string) => {
             alert("Block creation failed. Transaction reverted.");
         } else {
             alert("Block created successfully!");
-            return(receipt)
+            return receipt;
         }
     } catch (error) {
         console.error("Error creating block:", error);
@@ -51,14 +61,15 @@ export const createBlock = async (_name: string, _description: string) => {
     }
 };
 
+
 // Function to add a transaction to a block
-export const addTransactionToBlock = async (transactionId: bigint, blockId: bigint) => {
+export const addTransactionToBlock = async (blockId: bigint, transactionId: bigint,) => {
   try {
       const txHash = await writeContract(config, {
           address: deployedAddress,
           abi: ABI,
           functionName: "addTransactionToBlock",
-          args: [transactionId, blockId],
+          args: [blockId, transactionId],
       });
 
       const receipt = await waitForTransactionReceipt(config, { hash: txHash });
@@ -115,29 +126,6 @@ export const updateProfile = async (username: string, bio: string, profilePictur
       console.error("Error updating profile:", error);
       alert("Updating profile failed.");
   }
-};
-
-// Function to update block details
-export const updateBlockDetails = async (_blockId: bigint, _newName: string, _newDescription: string) => {
-    try {
-        const txHash = await writeContract(config, {
-            address: deployedAddress,
-            abi: ABI,
-            functionName: "updateBlockDetails",
-            args: [_blockId, _newName, _newDescription],
-        });
-
-        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
-        if (receipt.status === "reverted") {
-            alert("Updating block details failed. Transaction reverted.");
-        } else {
-            alert("Block details updated successfully!");
-            return(receipt)
-        }
-    } catch (error) {
-        console.error("Error updating block details:", error);
-        alert("Updating block details failed.");
-    }
 };
 
 // Function to like a transaction
@@ -293,27 +281,27 @@ export const withdrawAdminFunds = async () => {
         alert("Withdrawing admin funds failed.");
     }
 };
-
-// Get Donors and Donation Amounts
 export const getDonorsAndDonations = async (transactionId: bigint) => {
     try {
-        console.log('about to make rpc request .....................................')
-        const [donors, donations] = await readContract(config, {
+        const [donorsAddresses, donations] = await readContract(config, {
             abi: ABI,
             address: deployedAddress,
             functionName: "getDonorsAndDonations",
             args: [transactionId],
         });
-        console.log('rpc request okay! .....................................')
-        console.log('donation amount: ', donations)
-        console.log('donors: ', donors)
 
-        return { donors, donations };
+        const donors = donorsAddresses.map((address, index) => ({
+            address,
+            amount: donations[index] ? Number(donations[index]) : 0, // Ensure it converts to number
+        }));
+
+        return { donors, total: donations.reduce((acc, amt) => acc + Number(amt), 0) }; // Example to calculate total
     } catch (error) {
         console.error("Error fetching donors and donations:", error);
-        return { donors: [], donations: [] };
+        return { donors: [], total: 0 }; // Return a total of 0 on error
     }
 };
+
 
 // Fetch User Transactions
 export const getUserTransactions = async (userAddress: `0x${string}`) => {
@@ -324,7 +312,22 @@ export const getUserTransactions = async (userAddress: `0x${string}`) => {
             functionName: "getUserTransactions",
             args: [userAddress],
         });
-
+        // console.log('from contract intraction', transactions)
+        return transactions;
+    } catch (error) {
+        console.error("Error fetching user transactions:", error);
+        return [];
+    }
+};
+export const getATransactions = async (id: bigint) => {
+    try {
+        const transactions = await readContract(config, {
+            abi: ABI,
+            address: deployedAddress,
+            functionName: "transactions",
+            args: [id],
+        });
+        // console.log('from contract intraction', transactions)
         return transactions;
     } catch (error) {
         console.error("Error fetching user transactions:", error);
@@ -368,16 +371,34 @@ export const getPublicTransactions = async () => {
     }
 };
 
+// Function to get all blocks
+export const getAllBlocks = async () => {
+    try {
+        const blocks = await readContract(config, {
+            address: deployedAddress,
+            abi: ABI,
+            functionName: "getAllBlocks",
+            args: [],
+        });
+
+        return blocks;
+    } catch (error) {
+        console.error("Error fetching blocks:", error);
+        alert("Failed to fetch blocks.");
+    }
+};
+
+
 // Fetch Block Details
 export const getBlockDetails = async (blockId: bigint) => {
     try {
         const blockDetails = await readContract(config, {
             abi: ABI,
             address: deployedAddress,
-            functionName: "getBlockDetails",
+            functionName: "blocks",
             args: [blockId],
         });
-
+        // console.log(blockDetails)
         return blockDetails;
     } catch (error) {
         console.error("Error fetching block details:", error);
@@ -391,7 +412,7 @@ export const getUserProfile = async (userAddress: `0x${string}`) => {
         const userProfile = await readContract(config, {
             abi: ABI,
             address: deployedAddress,
-            functionName: "getUserProfile",
+            functionName: "userProfiles",
             args: [userAddress],
         });
 
@@ -436,6 +457,24 @@ export const getFollowing = async (_user: `0x${string}`) => {
   }
 };
 
+// Fetch users being followed by a user
+export const isFollowing = async (follower: `0x${string}`, following: `0x${string}`) => {
+    try {
+        const isUserFollowing = await readContract(config, {
+            abi: ABI,
+            address: deployedAddress,
+            functionName: "isFollowing",
+            args: [follower, following],
+        });
+  
+        return isUserFollowing;
+    } catch (error) {
+        console.error("Error checking follow status:", error);
+        return false; 
+    }
+  };
+  
+
 // Fetch comments on a transaction
 export const getTransactionComments = async (_transactionId: bigint) => {
   try {
@@ -451,21 +490,4 @@ export const getTransactionComments = async (_transactionId: bigint) => {
       console.error("Error fetching transaction comments:", error);
       return [];
   }
-};
-
-// Fetch User Feed
-export const getUserFeed = async (userAddress: `0x${string}`) => {
-    try {
-        const feed = await readContract(config, {
-            abi: ABI,
-            address: deployedAddress,
-            functionName: "getUserFeed",
-            args: [userAddress],
-        });
-
-        return feed;
-    } catch (error) {
-        console.error("Error fetching user feed:", error);
-        return [];
-    }
 };

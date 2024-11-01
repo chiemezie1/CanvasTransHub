@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Header from "@/components/Header"
+import Header from "@/components/landingPage/Header"
 import Hero from "./Hero"
 import Features from "./Features"
 import HowItWorks from "./HowItWorks"

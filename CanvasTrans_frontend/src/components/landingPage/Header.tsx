@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Moon, Sun, UserCircle2, Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { CanvasTransLogo } from './CanvasTransLogo';
+import { CanvasTransLogo } from '../CanvasTransLogo';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import {

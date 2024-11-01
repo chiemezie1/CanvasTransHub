@@ -2,22 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sun, Moon, User, FileText, Boxes } from 'lucide-react'
+import { Sun, Moon, User, FileText, Boxes, Users } from 'lucide-react'
 import ProfileUpdateForm from './ProfileUpdateForm'
 import UserFeed from './UserFeed'
 import UserBlocks from './UserBlocks'
 import { CanvasTransLogo } from '@/components/CanvasTransLogo'
 import Link from 'next/link'
 import { useAccount } from "wagmi"
-import { getUserProfile, getUserTransactions, getUserBlocks } from "@/contracts/contractInteractions"
+import { getUserProfile, getUserTransactions, getUserBlocks, getFollowers, getFollowing } from "@/contracts/contractInteractions"
 
 interface UserProfileData {
   username: string
   bio: string
   profilePicture: string
   walletAddress?: string
-  followers: readonly `0x${string}`[]
-  following: readonly `0x${string}`[]
+  followers: number
+  following: number
 }
 
 export default function UserProfile() {
@@ -38,15 +38,17 @@ export default function UserProfile() {
     const fetchUserProfile = async () => {
       if (isConnected && address) {
         const profile = await getUserProfile(address)
-
+        const followers = await getFollowers(address)
+        const following = await getFollowing(address)
+  
         if (profile) {
           setUserProfile({
-            username: profile.username,
-            bio: profile.bio,
-            profilePicture: profile.profilePicture,
+            username: profile[0],
+            bio: profile[1],
+            profilePicture: profile[2],
             walletAddress: address,
-            followers: profile.followers || [],
-            following: profile.following || []
+            followers: followers.length || 0,
+            following: following.length || 0
           })
 
           // Fetch user transactions and blocks
@@ -126,6 +128,17 @@ export default function UserProfile() {
                       <span>{blocks.length} Blocks</span>
                     </div>
                   </div>
+                  
+                  <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-4 text-sm">
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-2 text-green-700 dark:text-text-green-400" />
+                      <span>{userProfile?.followers} Followers</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Users  className="w-4 h-4 mr-2  text-green-700 dark:text-text-green-400" />
+                      <span>{userProfile?.following} Following</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -154,22 +167,7 @@ export default function UserProfile() {
               <div className="p-6">
                 {activeTab === 'profile' && <ProfileUpdateForm onProfileUpdate={setUserProfile} />}
                 {activeTab === 'feed' && <UserFeed />}
-                {activeTab === 'blocks' && (
-                  <div>
-                    {blocks.map((block, index) => (
-                      <div key={index} className="mb-4">
-                        <p>Block #{index + 1}</p>
-                        <pre>
-                          {JSON.stringify(
-                            block,
-                            (key, value) => (typeof value === "bigint" ? value.toString() : value),
-                            2
-                          )}
-                        </pre>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {activeTab === 'blocks' && <UserBlocks />}
               </div>
             </div>
           </motion.div>

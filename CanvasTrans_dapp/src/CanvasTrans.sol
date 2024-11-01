@@ -49,6 +49,8 @@ contract CanvasTrans {
     address public admin;
     uint256 public transactionCounter;
     uint256 public blockCounter;
+    uint256 totalCreatorAmount = 0;
+
 
     mapping(uint256 => CanvasTransItem) public transactions; // Mapping of transaction IDs to CanvasTransItem structs
     mapping(uint256 => Block) public blocks; // Mapping of block IDs to Block structs
@@ -137,7 +139,8 @@ contract CanvasTrans {
     // Function to add a transaction to a block
     function addTransactionToBlock(uint256 _blockId, uint256 _transactionId) external onlyBlockOwner(_blockId) {
         require(transactions[_transactionId].creator != address(0), "Transaction does not exist");
-        blocks[_blockId].transactionIds.push(_transactionId);
+        require(transactions[_transactionId].transBlock == 0, "Transaction already assigned to a block");
+         blocks[_blockId].transactionIds.push(_transactionId);
         
         transactions[_transactionId].transBlock = _blockId;
 
@@ -172,14 +175,6 @@ contract CanvasTrans {
 
     }
     
-    function updateBlockDetails(uint256 _blockId, string memory _newName, string memory _newDescription) external onlyBlockOwner(_blockId) {
-        require(bytes(_newName).length > 0, "Block name cannot be empty");
-        blocks[_blockId].name = _newName;
-        blocks[_blockId].description = _newDescription;
-
-        emit BlockDetailsUpdated(_blockId, _newName, _newDescription);
-    }
-
     // Function to like a Canvas Transaction
     function likeTransaction(uint256 _transactionId) external {
         require(transactions[_transactionId].creator != address(0), "Transaction does not exist");
@@ -283,13 +278,28 @@ contract CanvasTrans {
     }
 
     // Fetch user transactions
-    function getUserTransactions(address _user) external view returns (uint256[] memory) {
-        return userTransactions[_user];
+       // Function to get the full details of all transactions associated with a user
+    function getUserTransactions(address _user) external view returns (CanvasTransItem[] memory) {
+        uint256[] memory transactionIds = userTransactions[_user];
+        CanvasTransItem[] memory userTransactionDetails = new CanvasTransItem[](transactionIds.length);
+
+        for (uint256 i = 0; i < transactionIds.length; i++) {
+            userTransactionDetails[i] = transactions[transactionIds[i]];
+        }
+
+        return userTransactionDetails;
     }
 
     // Fetch a user's blocks
-    function getUserBlocks(address _user) external view returns (uint256[] memory) {
-        return userBlocks[_user];
+    function getUserBlocks(address _user) external view returns (Block[] memory) {
+        uint256[] memory blockIds = userBlocks[_user];
+        Block[] memory userBlockDetails = new Block[](blockIds.length);
+
+        for (uint256 i = 0; i < blockIds.length; i++) {
+            userBlockDetails[i] = blocks[blockIds[i]];
+        }
+
+        return userBlockDetails;
     }
  
     // Function to get all transactions
@@ -330,4 +340,21 @@ contract CanvasTrans {
         }
         return false;
     }
+        // Function to get a Block with all its associated transactions
+    function getBlockWithTransactions(uint256 _blockId) external view returns (Block memory, CanvasTransItem[] memory) {
+        require(blocks[_blockId].owner != address(0), "Block does not exist");
+
+        Block memory blockData = blocks[_blockId];
+        uint256[] memory transactionIds = blockData.transactionIds;
+
+        CanvasTransItem[] memory blockTransactions = new CanvasTransItem[](transactionIds.length);
+        
+        // Retrieve each transaction by ID and add it to the result array
+        for (uint256 i = 0; i < transactionIds.length; i++) {
+            blockTransactions[i] = transactions[transactionIds[i]];
+        }
+
+        return (blockData, blockTransactions);
+    }
+
 }

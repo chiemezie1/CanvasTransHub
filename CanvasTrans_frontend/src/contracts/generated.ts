@@ -25,8 +25,8 @@ export const canvasTransAbi = [
   {
     type: 'function',
     inputs: [
-      { name: '_transactionId', internalType: 'uint256', type: 'uint256' },
       { name: '_blockId', internalType: 'uint256', type: 'uint256' },
+      { name: '_transactionId', internalType: 'uint256', type: 'uint256' },
     ],
     name: 'addTransactionToBlock',
     outputs: [],
@@ -51,8 +51,10 @@ export const canvasTransAbi = [
     inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     name: 'blocks',
     outputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256' },
       { name: 'name', internalType: 'string', type: 'string' },
       { name: 'description', internalType: 'string', type: 'string' },
+      { name: 'category', internalType: 'string', type: 'string' },
       { name: 'owner', internalType: 'address', type: 'address' },
     ],
     stateMutability: 'view',
@@ -62,6 +64,7 @@ export const canvasTransAbi = [
     inputs: [
       { name: '_name', internalType: 'string', type: 'string' },
       { name: '_description', internalType: 'string', type: 'string' },
+      { name: '_category', internalType: 'string', type: 'string' },
     ],
     name: 'createBlock',
     outputs: [],
@@ -73,6 +76,11 @@ export const canvasTransAbi = [
       { name: '_ipfsHash', internalType: 'string', type: 'string' },
       { name: '_title', internalType: 'string', type: 'string' },
       { name: '_description', internalType: 'string', type: 'string' },
+      {
+        name: '_mediaType',
+        internalType: 'enum CanvasTrans.MediaType',
+        type: 'uint8',
+      },
     ],
     name: 'createTransaction',
     outputs: [],
@@ -118,22 +126,70 @@ export const canvasTransAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '_blockId', internalType: 'uint256', type: 'uint256' }],
-    name: 'getBlockDetails',
+    inputs: [],
+    name: 'getAllBlocks',
     outputs: [
       {
         name: '',
-        internalType: 'struct CanvasTrans.Block',
-        type: 'tuple',
+        internalType: 'struct CanvasTrans.Block[]',
+        type: 'tuple[]',
         components: [
+          { name: 'id', internalType: 'uint256', type: 'uint256' },
           { name: 'name', internalType: 'string', type: 'string' },
           { name: 'description', internalType: 'string', type: 'string' },
+          { name: 'category', internalType: 'string', type: 'string' },
           { name: 'owner', internalType: 'address', type: 'address' },
           {
             name: 'transactionIds',
             internalType: 'uint256[]',
             type: 'uint256[]',
           },
+        ],
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_blockId', internalType: 'uint256', type: 'uint256' }],
+    name: 'getBlockWithTransactions',
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct CanvasTrans.Block',
+        type: 'tuple',
+        components: [
+          { name: 'id', internalType: 'uint256', type: 'uint256' },
+          { name: 'name', internalType: 'string', type: 'string' },
+          { name: 'description', internalType: 'string', type: 'string' },
+          { name: 'category', internalType: 'string', type: 'string' },
+          { name: 'owner', internalType: 'address', type: 'address' },
+          {
+            name: 'transactionIds',
+            internalType: 'uint256[]',
+            type: 'uint256[]',
+          },
+        ],
+      },
+      {
+        name: '',
+        internalType: 'struct CanvasTrans.CanvasTransItem[]',
+        type: 'tuple[]',
+        components: [
+          { name: 'id', internalType: 'uint256', type: 'uint256' },
+          { name: 'ipfsHash', internalType: 'string', type: 'string' },
+          { name: 'title', internalType: 'string', type: 'string' },
+          { name: 'description', internalType: 'string', type: 'string' },
+          {
+            name: 'mediaType',
+            internalType: 'enum CanvasTrans.MediaType',
+            type: 'uint8',
+          },
+          { name: 'creator', internalType: 'address', type: 'address' },
+          { name: 'transBlock', internalType: 'uint256', type: 'uint256' },
+          { name: 'likes', internalType: 'uint256', type: 'uint256' },
+          { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
+          { name: 'totalDonations', internalType: 'uint256', type: 'uint256' },
         ],
       },
     ],
@@ -175,10 +231,17 @@ export const canvasTransAbi = [
         internalType: 'struct CanvasTrans.CanvasTransItem[]',
         type: 'tuple[]',
         components: [
+          { name: 'id', internalType: 'uint256', type: 'uint256' },
           { name: 'ipfsHash', internalType: 'string', type: 'string' },
           { name: 'title', internalType: 'string', type: 'string' },
           { name: 'description', internalType: 'string', type: 'string' },
+          {
+            name: 'mediaType',
+            internalType: 'enum CanvasTrans.MediaType',
+            type: 'uint8',
+          },
           { name: 'creator', internalType: 'address', type: 'address' },
+          { name: 'transBlock', internalType: 'uint256', type: 'uint256' },
           { name: 'likes', internalType: 'uint256', type: 'uint256' },
           { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
           { name: 'totalDonations', internalType: 'uint256', type: 'uint256' },
@@ -211,23 +274,48 @@ export const canvasTransAbi = [
     type: 'function',
     inputs: [{ name: '_user', internalType: 'address', type: 'address' }],
     name: 'getUserBlocks',
-    outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
+    outputs: [
+      {
+        name: '',
+        internalType: 'struct CanvasTrans.Block[]',
+        type: 'tuple[]',
+        components: [
+          { name: 'id', internalType: 'uint256', type: 'uint256' },
+          { name: 'name', internalType: 'string', type: 'string' },
+          { name: 'description', internalType: 'string', type: 'string' },
+          { name: 'category', internalType: 'string', type: 'string' },
+          { name: 'owner', internalType: 'address', type: 'address' },
+          {
+            name: 'transactionIds',
+            internalType: 'uint256[]',
+            type: 'uint256[]',
+          },
+        ],
+      },
+    ],
     stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [{ name: '_user', internalType: 'address', type: 'address' }],
-    name: 'getUserFeed',
+    name: 'getUserTransactions',
     outputs: [
       {
         name: '',
         internalType: 'struct CanvasTrans.CanvasTransItem[]',
         type: 'tuple[]',
         components: [
+          { name: 'id', internalType: 'uint256', type: 'uint256' },
           { name: 'ipfsHash', internalType: 'string', type: 'string' },
           { name: 'title', internalType: 'string', type: 'string' },
           { name: 'description', internalType: 'string', type: 'string' },
+          {
+            name: 'mediaType',
+            internalType: 'enum CanvasTrans.MediaType',
+            type: 'uint8',
+          },
           { name: 'creator', internalType: 'address', type: 'address' },
+          { name: 'transBlock', internalType: 'uint256', type: 'uint256' },
           { name: 'likes', internalType: 'uint256', type: 'uint256' },
           { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
           { name: 'totalDonations', internalType: 'uint256', type: 'uint256' },
@@ -238,29 +326,12 @@ export const canvasTransAbi = [
   },
   {
     type: 'function',
-    inputs: [{ name: '_user', internalType: 'address', type: 'address' }],
-    name: 'getUserProfile',
-    outputs: [
-      {
-        name: '',
-        internalType: 'struct CanvasTrans.UserProfile',
-        type: 'tuple',
-        components: [
-          { name: 'username', internalType: 'string', type: 'string' },
-          { name: 'bio', internalType: 'string', type: 'string' },
-          { name: 'profilePicture', internalType: 'string', type: 'string' },
-          { name: 'followers', internalType: 'address[]', type: 'address[]' },
-          { name: 'following', internalType: 'address[]', type: 'address[]' },
-        ],
-      },
+    inputs: [
+      { name: '_follower', internalType: 'address', type: 'address' },
+      { name: '_following', internalType: 'address', type: 'address' },
     ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_user', internalType: 'address', type: 'address' }],
-    name: 'getUserTransactions',
-    outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
+    name: 'isFollowing',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
   {
@@ -318,10 +389,17 @@ export const canvasTransAbi = [
     inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     name: 'transactions',
     outputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256' },
       { name: 'ipfsHash', internalType: 'string', type: 'string' },
       { name: 'title', internalType: 'string', type: 'string' },
       { name: 'description', internalType: 'string', type: 'string' },
+      {
+        name: 'mediaType',
+        internalType: 'enum CanvasTrans.MediaType',
+        type: 'uint8',
+      },
       { name: 'creator', internalType: 'address', type: 'address' },
+      { name: 'transBlock', internalType: 'uint256', type: 'uint256' },
       { name: 'likes', internalType: 'uint256', type: 'uint256' },
       { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
       { name: 'totalDonations', internalType: 'uint256', type: 'uint256' },
@@ -332,17 +410,6 @@ export const canvasTransAbi = [
     type: 'function',
     inputs: [{ name: '_newAdmin', internalType: 'address', type: 'address' }],
     name: 'updateAdmin',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_blockId', internalType: 'uint256', type: 'uint256' },
-      { name: '_newName', internalType: 'string', type: 'string' },
-      { name: '_newDescription', internalType: 'string', type: 'string' },
-    ],
-    name: 'updateBlockDetails',
     outputs: [],
     stateMutability: 'nonpayable',
   },
@@ -900,12 +967,21 @@ export const useReadCanvasTransDonations = /*#__PURE__*/ createUseReadContract({
 })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"getBlockDetails"`
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"getAllBlocks"`
  */
-export const useReadCanvasTransGetBlockDetails =
+export const useReadCanvasTransGetAllBlocks =
   /*#__PURE__*/ createUseReadContract({
     abi: canvasTransAbi,
-    functionName: 'getBlockDetails',
+    functionName: 'getAllBlocks',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"getBlockWithTransactions"`
+ */
+export const useReadCanvasTransGetBlockWithTransactions =
+  /*#__PURE__*/ createUseReadContract({
+    abi: canvasTransAbi,
+    functionName: 'getBlockWithTransactions',
   })
 
 /**
@@ -963,30 +1039,21 @@ export const useReadCanvasTransGetUserBlocks =
   })
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"getUserFeed"`
- */
-export const useReadCanvasTransGetUserFeed =
-  /*#__PURE__*/ createUseReadContract({
-    abi: canvasTransAbi,
-    functionName: 'getUserFeed',
-  })
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"getUserProfile"`
- */
-export const useReadCanvasTransGetUserProfile =
-  /*#__PURE__*/ createUseReadContract({
-    abi: canvasTransAbi,
-    functionName: 'getUserProfile',
-  })
-
-/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"getUserTransactions"`
  */
 export const useReadCanvasTransGetUserTransactions =
   /*#__PURE__*/ createUseReadContract({
     abi: canvasTransAbi,
     functionName: 'getUserTransactions',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"isFollowing"`
+ */
+export const useReadCanvasTransIsFollowing =
+  /*#__PURE__*/ createUseReadContract({
+    abi: canvasTransAbi,
+    functionName: 'isFollowing',
   })
 
 /**
@@ -1147,15 +1214,6 @@ export const useWriteCanvasTransUpdateAdmin =
   })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"updateBlockDetails"`
- */
-export const useWriteCanvasTransUpdateBlockDetails =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: canvasTransAbi,
-    functionName: 'updateBlockDetails',
-  })
-
-/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"updateProfile"`
  */
 export const useWriteCanvasTransUpdateProfile =
@@ -1267,15 +1325,6 @@ export const useSimulateCanvasTransUpdateAdmin =
   /*#__PURE__*/ createUseSimulateContract({
     abi: canvasTransAbi,
     functionName: 'updateAdmin',
-  })
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link canvasTransAbi}__ and `functionName` set to `"updateBlockDetails"`
- */
-export const useSimulateCanvasTransUpdateBlockDetails =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: canvasTransAbi,
-    functionName: 'updateBlockDetails',
   })
 
 /**

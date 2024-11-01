@@ -1,60 +1,55 @@
-import { formatDistanceToNow } from 'date-fns'
-import { ThumbsUp, DollarSign } from 'lucide-react'
-import { CanvasTransItem } from '@/types/types'
+'use client'
 
-interface TransactionPostProps {
-  item: CanvasTransItem
-  onLike: (id: string) => void
-  onDonate: (id: string, amount: number) => void
-}
+import { useState, useEffect } from 'react'
+import { getUserProfile } from "@/contracts/contractInteractions"
+import TransactionPostDetails from './TransactionPostDetails'
+import TransactionPostActions from './TransactionPostActions'
+import UserProfileModal from './UserProfileModal'
+import { UserProfileModalProps } from '@/types/types'
 
-export default function TransactionPost({ item, onLike, onDonate }: TransactionPostProps) {
+export default function TransactionPost({ item }: UserProfileModalProps) {
+  const [userProfile, setUserProfile] = useState<{ profilePicture: string } | null>(null)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const profile = await getUserProfile(item.creator)
+        if (profile) {
+          setUserProfile({ profilePicture: profile[2] || '' })
+        } else {
+          setUserProfile(null)
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error)
+        setUserProfile(null)
+      }
+    }
+    fetchUserProfile()
+  }, [item.creator])
+
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-      <div className="flex justify-between items-start mb-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{item.title}</h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {formatDistanceToNow(item.timestamp, { addSuffix: true })}
-        </span>
+    <div className="mt-16 bg-background dark:bg-background-dark rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+      <div className="p-6 space-y-6">
+        <div className="flex items-start space-x-4">
+          {userProfile && (
+            <img
+              src={`https://gateway.pinata.cloud/ipfs/${userProfile.profilePicture}`}
+              alt="User Profile"
+              className="w-12 h-12 rounded-full cursor-pointer"
+              onClick={() => setIsProfileModalOpen(true)}
+            />
+          )}
+          <TransactionPostDetails item={item} />
+        </div>
+        <TransactionPostActions item={item} />
       </div>
-      <p className="text-gray-700 dark:text-gray-300 mb-4">{item.description}</p>
-      {item.contentType === 'image' && (
-        <img
-          src={`https://ipfs.io/ipfs/${item.ipfsHash}`}
-          alt={item.title}
-          className="w-full h-64 object-cover rounded-md mb-4"
+      {isProfileModalOpen && (
+        <UserProfileModal
+          userAddress={item.creator}
+          onClose={() => setIsProfileModalOpen(false)}
         />
       )}
-      {item.contentType === 'video' && (
-        <video
-          src={`https://ipfs.io/ipfs/${item.ipfsHash}`}
-          controls
-          className="w-full h-64 object-cover rounded-md mb-4"
-        >
-          Your browser does not support the video tag.
-        </video>
-      )}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onLike(item.id)}
-            className="flex items-center space-x-1 text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-light"
-          >
-            <ThumbsUp className="h-5 w-5" />
-            <span>{item.likes}</span>
-          </button>
-          <button
-            onClick={() => onDonate(item.id, 0.1)}
-            className="flex items-center space-x-1 text-gray-600 hover:text-primary dark:text-gray-400 dark:hover:text-primary-light"
-          >
-            <DollarSign className="h-5 w-5" />
-            <span>{item.totalDonations.toFixed(2)} ETH</span>
-          </button>
-        </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          by {item.creator.name}
-        </div>
-      </div>
     </div>
   )
 }

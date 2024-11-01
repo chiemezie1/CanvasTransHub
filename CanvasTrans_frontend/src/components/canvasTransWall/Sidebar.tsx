@@ -1,50 +1,74 @@
-import { useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
-
-interface Block {
-  id: string
-  name: string
-}
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface SidebarProps {
-  blocks: Block[]
-  selectedBlock: string | null
-  setSelectedBlock: (blockId: string | null) => void
+  categories: readonly string[]
+  selectedCategory: string | null
+  setSelectedCategory: (category: string | null) => void
   isOpen: boolean
   onToggle: () => void
+  setIsLoading: (isLoading: boolean) => void
 }
 
-export default function Sidebar({ blocks, selectedBlock, setSelectedBlock, isOpen, onToggle }: SidebarProps) {
+export default function Sidebar({ 
+  categories, 
+  selectedCategory, 
+  setSelectedCategory, 
+  isOpen, 
+  onToggle,
+  setIsLoading
+}: SidebarProps) {
+  const handleCategoryClick = (category: string | null) => {
+    setIsLoading(true)
+    setSelectedCategory(category)
+  }
+
   return (
-    <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}>
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Blocks</h2>
-        <button onClick={onToggle} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-      </div>
-      <nav className="mt-4">
-        <ul>
-          <li>
-            <button
-              onClick={() => setSelectedBlock(null)}
-              className={`w-full text-left px-4 py-2 ${!selectedBlock ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-            >
-              All Blocks
-            </button>
-          </li>
-          {blocks.map((block) => (
-            <li key={block.id}>
+    <>
+      <div
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-background dark:bg-background-dark shadow-xl transform ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-300 ease-in-out overflow-y-auto`}
+        style={{ top: '2rem' }}
+      >
+        <nav className="mt-10">
+          <ul>
+            <li>
               <button
-                onClick={() => setSelectedBlock(block.id)}
-                className={`w-full text-left px-4 py-2 ${selectedBlock === block.id ? 'bg-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                onClick={() => handleCategoryClick(null)}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  !selectedCategory
+                    ? 'bg-primary text-white'
+                    : 'text-foreground hover:bg-gray-200 dark:text-foreground-dark dark:hover:bg-gray-700'
+                }`}
               >
-                {block.name}
+                All
               </button>
             </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
+            {categories.map((category) => (
+              <li key={category} className="mt-1">
+                <button
+                  onClick={() => handleCategoryClick(category)}
+                  className={`w-full text-left px-4 py-2 rounded-lg transition-colors duration-200 ${
+                    selectedCategory === category
+                      ? 'bg-primary text-white'
+                      : 'text-foreground hover:bg-gray-200 dark:text-foreground-dark dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {category}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+      <button
+        onClick={onToggle}
+        className={`fixed left-0 top-1/2 transform -translate-y-1/2 bg-primary text-white p-2 rounded-r-md transition-all duration-300 ease-in-out ${
+          isOpen ? 'translate-x-64' : 'translate-x-0'
+        }`}
+      >
+        <ChevronRight className="h-6 w-6" />
+      </button>
+    </>
   )
 }

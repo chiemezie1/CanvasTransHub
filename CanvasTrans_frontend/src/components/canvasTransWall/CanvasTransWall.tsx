@@ -1,91 +1,77 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
-import FilterBar from './FilterBar'
 import TransactionPost from './TransactionPost'
-import CreateTransModal from './CreateTransModal'
-import { CanvasTransItem, Block } from '@/types/types'
+import CreationModal from './CreationModal'
+import { CanvasTransItem } from '@/types/types'
+import { getPublicTransactions, getAllBlocks } from "@/contracts/contractInteractions"
+import { Loader2 } from 'lucide-react'
 
-const mockData: CanvasTransItem[] = [
-  {
-    id: '1',
-    ipfsHash: 'Qm...1',
-    title: 'Digital Dreamscape',
-    description: 'A surreal landscape created entirely in digital space.',
-    creator: '0x1234...5678',
-    likes: 150,
-    timestamp: Date.now() - 86400000,
-    totalDonations: 0.5,
-    contentType: 'image',
-    blockId: '1'
-  },
-  {
-    id: '2',
-    ipfsHash: 'Qm...2',
-    title: 'The Future of Web3',
-    description: 'An essay on the potential impact of Web3 technologies.',
-    creator: '0x5678...9012',
-    likes: 75,
-    timestamp: Date.now() - 172800000,
-    totalDonations: 0.2,
-    contentType: 'text',
-    blockId: '2'
-  },
-  {
-    id: '3',
-    ipfsHash: 'Qm...3',
-    title: 'NFT Revolution',
-    description: 'A video exploring the rise of NFTs in the art world.',
-    creator: '0x9012...3456',
-    likes: 200,
-    timestamp: Date.now() - 259200000,
-    totalDonations: 0.8,
-    contentType: 'video',
-    blockId: '3'
-  }
-]
+const categories = [
+  'Web3',
+  'AI',
+  'CareerDevelopment',
+  'Jokes',
+  'Art',
+  'Entertainment',
+  'PersonalFinance',
+  'TravelAdventures',
+  'HealthAndWellness',
+  'Food',
+  'Books'
+] as const
 
-const mockBlocks: Block[] = [
-  { 
-    id: '1', 
-    name: 'Digital Art', 
-    description: 'A collection of digital artworks',
-    owner: '0x1234...5678',
-    transactionIds: ['1']
-  },
-  { 
-    id: '2', 
-    name: 'Web3 Essays', 
-    description: 'Thought-provoking essays on Web3',
-    owner: '0x5678...9012',
-    transactionIds: ['2']
-  },
-  { 
-    id: '3', 
-    name: 'Crypto Videos', 
-    description: 'Educational videos about cryptocurrency',
-    owner: '0x9012...3456',
-    transactionIds: ['3']
-  },
-]
+type Category = typeof categories[number]
 
 export default function CanvasTransWall() {
-  const [items, setItems] = useState<CanvasTransItem[]>(mockData)
-  const [filter, setFilter] = useState<'all' | 'image' | 'text' | 'video'>('all')
-  const [selectedBlock, setSelectedBlock] = useState<string | null>(null)
+  const [items, setItems] = useState<CanvasTransItem[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem('theme')
-    if (storedTheme) {
-      setIsDarkMode(storedTheme === 'dark')
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark')
+  const fetchTransactions = useCallback(async (category: Category | null) => {
+    setIsLoading(true)
+    try {
+      const transactions = (await getPublicTransactions() ?? []).map(transaction => ({
+        ...transaction,
+        likes: (transaction.likes),
+        timestamp: (transaction.timestamp),
+        totalDonations: (transaction.totalDonations),
+      }))
+
+      if (category !== null) {
+        const blocks = (await getAllBlocks() ?? []).map(block => ({
+          ...block,
+          transactionIds: [...block.transactionIds],
+        }))
+
+        const categoryBlocks = blocks.filter(block => block.category === category)
+        const filteredTransactions = transactions.filter(transaction => 
+          categoryBlocks.some(block => block.transactionIds.includes(transaction.id))
+        )
+        setItems(filteredTransactions)
+      } else {
+        setItems(transactions)
+      }
+    } catch (error) {
+      console.error("Error fetching transactions:", error)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    fetchTransactions(selectedCategory)
+  }, [selectedCategory, fetchTransactions])
+
+  const handleCategoryChange = (category: Category | null) => {
+    setSelectedCategory(category)
+    setIsLoading(true)
+  }
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode
@@ -94,61 +80,44 @@ export default function CanvasTransWall() {
     document.documentElement.classList.toggle('dark', newDarkMode)
   }
 
-  const filteredItems = items.filter(item => 
-    (filter === 'all' || item.contentType === filter) &&
-    (!selectedBlock || item.blockId === selectedBlock)
-  )
-
-  const handleLike = (id: string) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, likes: item.likes + 1 } : item
-    ))
-  }
-
-  const handleDonate = (id: string, amount: number) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, totalDonations: item.totalDonations + amount } : item
-    ))
-  }
-
-  const handleCreateTrans = (newItem: CanvasTransItem) => {
-    setItems([newItem, ...items])
-    setCreateModalOpen(false)
-  }
-
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
-      <div className="bg-background dark:bg-background-dark text-foreground dark:text-foreground-dark">
+      <div className="bg-background dark:bg-background-dark text-foreground dark:text-foreground-dark flex flex-col h-screen">
         <Navbar 
           onCreateClick={() => setCreateModalOpen(true)} 
           onThemeToggle={toggleDarkMode}
           onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
         />
-        <div className="flex">
+        <div className="flex flex-1 overflow-hidden">
           <Sidebar
-            blocks={mockBlocks}
-            selectedBlock={selectedBlock}
-            setSelectedBlock={setSelectedBlock}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={handleCategoryChange}
             isOpen={sidebarOpen}
             onToggle={() => setSidebarOpen(!sidebarOpen)}
           />
-          <main className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-            <div className="container mx-auto px-4 py-8">
-              <FilterBar filter={filter} setFilter={setFilter} />
-              <div className="space-y-6 mt-6">
-                {filteredItems.map(item => (
-                  <TransactionPost
-                    key={item.id}
-                    item={item}
-                    onLike={handleLike}
-                    onDonate={handleDonate}
-                  />
-                ))}
-              </div>
+          <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${sidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
+            <div className="container mx-auto px-4 py-4 max-w-4xl">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {items.map(item => (
+                    <TransactionPost
+                      key={item.ipfsHash}
+                      item={item}
+                      userAddress={item.creator}
+                      onClose={() => {}}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </main>
         </div>
-        <CreateTransModal
+        <CreationModal
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
         />
