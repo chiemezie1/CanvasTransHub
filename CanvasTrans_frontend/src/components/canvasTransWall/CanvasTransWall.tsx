@@ -7,7 +7,6 @@ import TransactionPost from './TransactionPost'
 import CreationModal from './CreationModal'
 import { CanvasTransItem } from '@/types/types'
 import { getPublicTransactions, getAllBlocks } from "@/contracts/contractInteractions"
-import { Loader2 } from 'lucide-react'
 
 const categories = [
   'Web3',
@@ -30,55 +29,77 @@ export default function CanvasTransWall() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark'
+    }
+    return false
+  })
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchTransactions = useCallback(async (category: Category | null) => {
+  const fetchTransactions = useCallback(async () => {
     setIsLoading(true)
     try {
-      const transactions = (await getPublicTransactions() ?? []).map(transaction => ({
+      const transactions = await getPublicTransactions()
+      const blocks = await getAllBlocks()
+
+      const formattedTransactions = (transactions ?? []).map(transaction => ({
         ...transaction,
-        likes: (transaction.likes),
-        timestamp: (transaction.timestamp),
-        totalDonations: (transaction.totalDonations),
+        likes: transaction.likes,
+        timestamp: transaction.timestamp,
+        totalDonations: transaction.totalDonations,
       }))
 
-      if (category !== null) {
-        const blocks = (await getAllBlocks() ?? []).map(block => ({
-          ...block,
-          transactionIds: [...block.transactionIds],
-        }))
+      const formattedBlocks = (blocks ?? []).map(block => ({
+        ...block,
+        transactionIds: [...block.transactionIds],
+      }))
 
-        const categoryBlocks = blocks.filter(block => block.category === category)
-        const filteredTransactions = transactions.filter(transaction => 
+      if (selectedCategory !== null) {
+        const categoryBlocks = formattedBlocks.filter(block => block.category === selectedCategory)
+        const filteredTransactions = formattedTransactions.filter(transaction => 
           categoryBlocks.some(block => block.transactionIds.includes(transaction.id))
         )
         setItems(filteredTransactions)
       } else {
-        setItems(transactions)
+        setItems(formattedTransactions)
       }
     } catch (error) {
-      console.error("Error fetching transactions:", error)
+      console.error("Error fetching data:", error)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [selectedCategory])
 
   useEffect(() => {
-    fetchTransactions(selectedCategory)
-  }, [selectedCategory, fetchTransactions])
+    fetchTransactions()
+  }, [fetchTransactions])
 
-  const handleCategoryChange = (category: Category | null) => {
+  // These changes trigger the `fetchTransactions` function multiple times,
+  // ensuring that data is loaded.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSelectedCategory('Web3')
+      setTimeout(() => {
+        setSelectedCategory(null)
+      }, 100)
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prevMode => {
+      const newMode = !prevMode
+      localStorage.setItem('theme', newMode ? 'dark' : 'light')
+      document.documentElement.classList.toggle('dark', newMode)
+      return newMode
+    })
+  }, [])
+
+  const handleCategoryChange = useCallback((category: Category | null) => {
     setSelectedCategory(category)
-    setIsLoading(true)
-  }
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode
-    setIsDarkMode(newDarkMode)
-    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light')
-    document.documentElement.classList.toggle('dark', newDarkMode)
-  }
+  }, [])
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
@@ -98,22 +119,25 @@ export default function CanvasTransWall() {
           />
           <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${sidebarOpen ? 'md:ml-64' : 'ml-0'}`}>
             <div className="container mx-auto px-4 py-4 max-w-4xl">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                  <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {items.map(item => (
+              <div className="space-y-6">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+                  </div>
+                ) : items.length === 0 ? (
+                  <div className="text-center text-gray-500 dark:text-gray-400">No items found</div>
+                ) : (
+                  items.map(item => (
                     <TransactionPost
                       key={item.ipfsHash}
                       item={item}
                       userAddress={item.creator}
                       onClose={() => {}}
+                      isLoading={false}
                     />
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </main>
         </div>

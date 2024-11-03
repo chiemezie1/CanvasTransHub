@@ -1,18 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 import { getUserProfile } from "@/contracts/contractInteractions"
 import TransactionPostDetails from './TransactionPostDetails'
 import TransactionPostActions from './TransactionPostActions'
 import UserProfileModal from './UserProfileModal'
 import { UserProfileModalProps } from '@/types/types'
 
-export default function TransactionPost({ item }: UserProfileModalProps) {
+interface TransactionPostProps extends UserProfileModalProps {
+  isLoading: boolean
+}
+
+export default function TransactionPost({ item, isLoading }: TransactionPostProps) {
   const [userProfile, setUserProfile] = useState<{ profilePicture: string } | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isContentLoading, setIsContentLoading] = useState(true)
 
   useEffect(() => {
     const fetchUserProfile = async () => {
+      setIsContentLoading(true)
       try {
         const profile = await getUserProfile(item.creator)
         if (profile) {
@@ -23,10 +30,22 @@ export default function TransactionPost({ item }: UserProfileModalProps) {
       } catch (error) {
         console.error("Failed to fetch user profile:", error)
         setUserProfile(null)
+      } finally {
+        setIsContentLoading(false)
       }
     }
     fetchUserProfile()
   }, [item.creator])
+
+  if (isLoading || isContentLoading) {
+    return (
+      <div className="mt-16 bg-background dark:bg-background-dark rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-16 bg-background dark:bg-background-dark rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
@@ -53,3 +72,5 @@ export default function TransactionPost({ item }: UserProfileModalProps) {
     </div>
   )
 }
+
+

@@ -1,12 +1,27 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
+const categories = [
+  'Web3',
+  'AI',
+  'CareerDevelopment',
+  'Jokes',
+  'Art',
+  'Entertainment',
+  'PersonalFinance',
+  'TravelAdventures',
+  'HealthAndWellness',
+  'Food',
+  'Books'
+] as const
+
+type Category = typeof categories[number]
+
 interface SidebarProps {
-  categories: readonly string[]
-  selectedCategory: string | null
-  setSelectedCategory: (category: string | null) => void
+  categories: readonly Category[]
+  selectedCategory: Category | null
+  setSelectedCategory: (category: Category | null) => void
   isOpen: boolean
   onToggle: () => void
-  setIsLoading: (isLoading: boolean) => void
 }
 
 export default function Sidebar({ 
@@ -15,10 +30,8 @@ export default function Sidebar({
   setSelectedCategory, 
   isOpen, 
   onToggle,
-  setIsLoading
-}: SidebarProps) {
-  const handleCategoryClick = (category: string | null) => {
-    setIsLoading(true)
+  }: SidebarProps) {
+  const handleCategoryClick = (category: Category | null) => {
     setSelectedCategory(category)
   }
 
@@ -36,7 +49,7 @@ export default function Sidebar({
               <button
                 onClick={() => handleCategoryClick(null)}
                 className={`w-full text-left px-4 py-2 rounded-lg transition-colors duration-200 ${
-                  !selectedCategory
+                  selectedCategory === null
                     ? 'bg-primary text-white'
                     : 'text-foreground hover:bg-gray-200 dark:text-foreground-dark dark:hover:bg-gray-700'
                 }`}
@@ -67,7 +80,7 @@ export default function Sidebar({
           isOpen ? 'translate-x-64' : 'translate-x-0'
         }`}
       >
-        <ChevronRight className="h-6 w-6" />
+        {isOpen ? <ChevronLeft className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
       </button>
     </>
   )

@@ -354,6 +354,7 @@ export const getUserBlocks = async (userAddress: `0x${string}`) => {
 
 // Get All Public Transactions
 export const getPublicTransactions = async () => {
+    console.log('about to call public tranaction')
     try {
         const transactions = await readContract(config, {
             abi: ABI,
@@ -362,7 +363,7 @@ export const getPublicTransactions = async () => {
             args: [],
         });
 
-        console.log(transactions)
+        console.log('the resault of the call to get public tranaction', transactions)
 
         return transactions;
     } catch (error) {
@@ -380,7 +381,7 @@ export const getAllBlocks = async () => {
             functionName: "getAllBlocks",
             args: [],
         });
-
+        console.log(blocks)
         return blocks;
     } catch (error) {
         console.error("Error fetching blocks:", error);
