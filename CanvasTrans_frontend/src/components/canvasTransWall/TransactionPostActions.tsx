@@ -219,7 +219,7 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
                         className="flex items-center space-x-1 text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400"
                     >
                         <ThumbsUp className="h-5 w-5" />
-                        <span>{item.likes}</span>
+                        <span>{Number(item.likes)}</span>
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

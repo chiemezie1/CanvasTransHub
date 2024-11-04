@@ -277,7 +277,6 @@ contract CanvasTrans {
         return (donors, donationAmounts);
     }
 
-    // Fetch user transactions
        // Function to get the full details of all transactions associated with a user
     function getUserTransactions(address _user) external view returns (CanvasTransItem[] memory) {
         uint256[] memory transactionIds = userTransactions[_user];
