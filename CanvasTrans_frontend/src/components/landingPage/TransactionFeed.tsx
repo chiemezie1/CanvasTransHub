@@ -2,36 +2,89 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUpRight, ChevronUp, ChevronDown, Activity } from 'lucide-react'
+import { ArrowUpRight, ChevronUp, ChevronDown, Activity, ExternalLink } from 'lucide-react'
+import { 
+  useTransactionCreatedListener,
+  useBlockCreatedListener,
+  useBlockDetailsUpdatedListener,
+  useCommentAddedListener,
+  useDonationMadeListener,
+  useDonationsWithdrawnListener,
+  useFollowedListener,
+  useTransactionAddedToBlockListener,
+  useTransactionLikedListener 
+} from '@/contracts/watchContractEvent'
 
-interface Transaction {
+interface Notification {
   id: string
-  from: string
-  to: string
-  amount: string
+  type: string
+  message: string
   timestamp: number
+  transactionHash: string
 }
 
-export default function TransactionFeed() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+export default function ContractNotifications() {
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
-  const generateTransaction = useCallback((): Transaction => ({
-    id: Math.random().toString(36).substr(2, 9),
-    from: `0x${Math.random().toString(36).substr(2, 8)}`,
-    to: `0x${Math.random().toString(36).substr(2, 8)}`,
-    amount: (Math.random() * 10).toFixed(4),
-    timestamp: Date.now(),
-  }), [])
+  const { transactionCreated, transactionHash: transactionCreatedHash } = useTransactionCreatedListener()
+  const { blockCreated, transactionHash: blockCreatedHash } = useBlockCreatedListener()
+  const { blockDetailsUpdated, transactionHash: blockDetailsUpdatedHash } = useBlockDetailsUpdatedListener()
+  const { commentAdded, transactionHash: commentAddedHash } = useCommentAddedListener()
+  const { donationMade, transactionHash: donationMadeHash } = useDonationMadeListener()
+  const { donationsWithdrawn, transactionHash: donationsWithdrawnHash } = useDonationsWithdrawnListener()
+  const { followed, transactionHash: followedHash } = useFollowedListener()
+  const { transactionAddedToBlock, transactionHash: transactionAddedToBlockHash } = useTransactionAddedToBlockListener()
+  const { transactionLiked, transactionHash: transactionLikedHash } = useTransactionLikedListener()
+
+  const addNotification = useCallback((type: string, message: string, hash: string) => {
+    setNotifications(prev => {
+      const newNotification = {
+        id: Math.random().toString(36).substr(2, 9),
+        type,
+        message,
+        timestamp: Date.now(),
+        transactionHash: hash
+      }
+      return [newNotification, ...prev].slice(0, 10) // Keep only the latest 10 notifications
+    })
+  }, [])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTransactions(prev => [generateTransaction(), ...prev.slice(0, 9)])
-    }, 5000)
+    if (transactionCreated && transactionCreatedHash) {
+      addNotification('TransactionCreated', `New transaction created by ${transactionCreated.creator.slice(0, 6)}...${transactionCreated.creator.slice(-4)}`, transactionCreatedHash)
+    }
+    if (blockCreated && blockCreatedHash) {
+      addNotification('BlockCreated', `New block created by ${blockCreated.owner.slice(0, 6)}...${blockCreated.owner.slice(-4)}`, blockCreatedHash)
+    }
+    if (blockDetailsUpdated && blockDetailsUpdatedHash) {
+      addNotification('BlockDetailsUpdated', `Block ${blockDetailsUpdated.blockId} details updated`, blockDetailsUpdatedHash)
+    }
+    if (commentAdded && commentAddedHash) {
+      addNotification('CommentAdded', `New comment added to transaction ${commentAdded.transactionId}`, commentAddedHash)
+    }
+    if (donationMade && donationMadeHash) {
+      addNotification('DonationMade', `Donation made to transaction ${donationMade.transactionId}`, donationMadeHash)
+    }
+    if (donationsWithdrawn && donationsWithdrawnHash) {
+      addNotification('DonationsWithdrawn', `Donations withdrawn by ${donationsWithdrawn.creator.slice(0, 6)}...${donationsWithdrawn.creator.slice(-4)}`, donationsWithdrawnHash)
+    }
+    if (followed && followedHash) {
+      addNotification('Followed', `${followed.follower.slice(0, 6)}...${followed.follower.slice(-4)} followed ${followed.user.slice(0, 6)}...${followed.user.slice(-4)}`, followedHash)
+    }
+    if (transactionAddedToBlock && transactionAddedToBlockHash) {
+      addNotification('TransactionAddedToBlock', `Transaction ${transactionAddedToBlock.transactionId} added to block ${transactionAddedToBlock.blockId}`, transactionAddedToBlockHash)
+    }
+    if (transactionLiked && transactionLikedHash) {
+      addNotification('TransactionLiked', `Transaction ${transactionLiked.transactionId} liked by ${transactionLiked.liker.slice(0, 6)}...${transactionLiked.liker.slice(-4)}`, transactionLikedHash)
+    }
+  }, [addNotification, transactionCreated, blockCreated, blockDetailsUpdated, commentAdded, donationMade, donationsWithdrawn, followed, transactionAddedToBlock, transactionLiked,
+      transactionCreatedHash, blockCreatedHash, blockDetailsUpdatedHash, commentAddedHash, donationMadeHash, donationsWithdrawnHash, followedHash, transactionAddedToBlockHash, transactionLikedHash])
 
-    return () => clearInterval(interval)
-  }, [generateTransaction])
+  const handleTransactionClick = (hash: string) => {
+    window.open(`https://sepolia.arbiscan.io/tx/${hash}`, '_blank')
+  }
 
   return (
     <motion.div
@@ -53,7 +106,7 @@ export default function TransactionFeed() {
         >
           <div className="flex items-center space-x-2">
             <Activity className="w-4 h-4 text-white animate-pulse" />
-            <span className="text-white">Live Transactions</span>
+            <span className="text-white">Contract Events</span>
           </div>
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-white" />
@@ -70,12 +123,12 @@ export default function TransactionFeed() {
               transition={{ duration: 0.3 }}
               className="p-2 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
             >
-              {transactions.map((tx, index) => (
+              {notifications.map((notification, index) => (
                 <motion.div
-                  key={tx.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
+                  key={notification.id}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="flex items-center justify-between py-2 border-b border-white/20 last:border-b-0"
                 >
@@ -84,19 +137,27 @@ export default function TransactionFeed() {
                       <ArrowUpRight className="w-4 h-4 text-white" />
                     </div>
                     <div className="text-xs">
-                      <div className="text-white font-medium">{tx.from.slice(0, 6)}...{tx.from.slice(-4)}</div>
-                      <div className="text-blue-200">{tx.amount} ETH</div>
+                      <div className="text-white font-medium">{notification.type}</div>
+                      <div className="text-blue-200">{notification.message}</div>
                     </div>
                   </div>
-                  <div className="text-xs text-blue-200">
-                    {new Date(tx.timestamp).toLocaleTimeString()}
+                  <div className="flex flex-col items-end">
+                    <div className="text-xs text-blue-200">
+                      {new Date(notification.timestamp).toLocaleTimeString()}
+                    </div>
+                    <button
+                      onClick={() => handleTransactionClick(notification.transactionHash)}
+                      className="mt-1 text-xs text-blue-200 hover:text-white transition-colors duration-200"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
-        {!isExpanded && (
+        {!isExpanded && notifications.length > 0 && (
           <motion.div 
             className="p-2 flex items-center justify-between"
             initial={false}
@@ -104,11 +165,16 @@ export default function TransactionFeed() {
             transition={{ duration: 0.2 }}
           >
             <div className="text-xs text-white">
-              <div className="font-medium">{transactions[0]?.from.slice(0, 6)}...{transactions[0]?.from.slice(-4)}</div>
-              <div className="text-blue-200">{transactions[0]?.amount} ETH</div>
+              <div className="font-medium">{notifications[0].type}</div>
+              <div className="text-blue-200">{notifications[0].message}</div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <ArrowUpRight className="w-5 h-5 text-white" />
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => handleTransactionClick(notifications[0].transactionHash)}
+                className="mt-1 text-xs text-blue-200 hover:text-white transition-colors duration-200"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
             </div>
           </motion.div>
         )}
