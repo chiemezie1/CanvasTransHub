@@ -10,6 +10,7 @@ import { CanvasTransLogo } from '@/components/CanvasTransLogo'
 import Link from 'next/link'
 import { useAccount } from "wagmi"
 import { getUserProfile, getUserTransactions, getUserBlocks, getFollowers, getFollowing } from "@/contracts/contractInteractions"
+import { MessageAlert } from '@/components/MessageAlert'
 
 interface UserProfileData {
   username: string
@@ -20,12 +21,51 @@ interface UserProfileData {
   following: number
 }
 
+interface CanvasTransItem {
+  id: string
+  ipfsHash: string
+  title: string
+  content: string
+  type: string
+  likes: number
+  comments: number
+  timestamp: number
+  transBlock: number
+  blockCategory: string | null
+  blockId: string | null
+}
+
+interface Block {
+  id: string
+  name: string
+  description: string
+  category: string
+  owner: string
+  transactionIds: bigint[]
+  posts: Post[]
+}
+
+interface Post {
+  id: string
+  title: string
+  type: string
+  likes: number
+}
+
+interface TransactionResult<T> {
+  success: boolean
+  data?: T
+  message?: string
+}
+
 export default function UserProfile() {
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null)
-  const [transactions, setTransactions] = useState<any[]>([])
-  const [blocks, setBlocks] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<CanvasTransItem[]>([])
+  const [blocks, setBlocks] = useState<Block[]>([])
   const [activeTab, setActiveTab] = useState('profile')
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [alertState, setAlertState] = useState<{ message: string; type: 'info' | 'success' | 'warning' | 'error' | null }>({ message: '', type: null })
+  const [isLoading, setIsLoading] = useState(true)
 
   const { address, isConnected } = useAccount()
 
@@ -37,27 +77,48 @@ export default function UserProfile() {
 
     const fetchUserProfile = async () => {
       if (isConnected && address) {
-        const profile = await getUserProfile(address)
-        const followers = await getFollowers(address)
-        const following = await getFollowing(address)
+        setIsLoading(true)
+        try {
+          const profileResult: TransactionResult<[string, string, string]> = await getUserProfile(address)
+          const followersResult: TransactionResult<readonly string[]> = await getFollowers(address)
+          const followingResult: TransactionResult<readonly string[]> = await getFollowing(address)
   
-        if (profile) {
-          setUserProfile({
-            username: profile[0],
-            bio: profile[1],
-            profilePicture: profile[2],
-            walletAddress: address,
-            followers: followers.length || 0,
-            following: following.length || 0
-          })
+          if (profileResult.success && profileResult.data) {
+            setUserProfile({
+              username: profileResult.data[0] || 'canvaTrans User',
+              bio: profileResult.data[1] || 'Set up a profile for more personalisation',
+              profilePicture: profileResult.data[2],
+              walletAddress: address,
+              followers: followersResult.success && followersResult.data ? followersResult.data.length : 0,
+              following: followingResult.success && followingResult.data ? followingResult.data.length : 0
+            })
 
-          // Fetch user transactions and blocks
-          const userTransactions = await getUserTransactions(address)
-          setTransactions([...userTransactions])
+            // Fetch user transactions and blocks
+            const transactionsResult: TransactionResult<readonly CanvasTransItem[]> = await getUserTransactions(address)
+            if (transactionsResult.success && transactionsResult.data) {
+              setTransactions([...transactionsResult.data])
+            } else {
+              setAlertState({ message: "Failed to fetch user transactions", type: 'error' })
+            }
 
-          const userBlocks = await getUserBlocks(address)
-          setBlocks([...userBlocks])
+            const blocksResult: TransactionResult<readonly Block[]> = await getUserBlocks(address)
+            if (blocksResult.success && blocksResult.data) {
+              setBlocks([...blocksResult.data])
+            } else {
+              setAlertState({ message: "Failed to fetch user blocks", type: 'error' })
+            }
+          } else {
+            setAlertState({ message: "Failed to fetch user profile", type: 'error' })
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error)
+          setAlertState({ message: "An error occurred while fetching user data", type: 'error' })
+        } finally {
+          setIsLoading(false)
         }
+      } else {
+        setAlertState({ message: "Please connect your wallet to view your profile", type: 'warning' })
+        setIsLoading(false)
       }
     }
     
@@ -69,6 +130,14 @@ export default function UserProfile() {
     setIsDarkMode(newDarkModeState)
     localStorage.setItem('theme', newDarkModeState ? 'dark' : 'light')
     document.documentElement.classList.toggle('dark', newDarkModeState)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -102,77 +171,90 @@ export default function UserProfile() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
-                  <img
-                    src={userProfile?.profilePicture ? `https://gateway.pinata.cloud/ipfs/${userProfile.profilePicture}` : ''}
-                    alt={userProfile?.username || 'User Profile Picture'}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-3xl font-bold mb-2">{userProfile?.username}</h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">{userProfile?.bio}</p>
-                  <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 mr-2 text-primary dark:text-primary-light" />
-                      <span>{userProfile?.walletAddress ? getShortenedAddress(userProfile.walletAddress) : 'No wallet address'}</span>
+            {userProfile && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                    <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                      <img
+                        src={userProfile.profilePicture ? `https://gateway.pinata.cloud/ipfs/${userProfile.profilePicture}` : '/placeholder-user.jpg'}
+                        alt={userProfile.username || 'User Profile Picture'}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <div className="flex items-center">
-                      <FileText className="w-4 h-4 mr-2 text-primary dark:text-primary-light" />
-                      <span>{transactions.length} Transactions</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Boxes className="w-4 h-4 mr-2 text-primary dark:text-primary-light" />
-                      <span>{blocks.length} Blocks</span>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h2 className="text-3xl font-bold mb-2">{userProfile.username}</h2>
+                      <p className={`text-gray-600 dark:text-gray-400 mb-4 ${userProfile.bio === 'Set up a profile for more personalisation' ? 'text-red-500' : ''}`}>
+                        {userProfile.bio}
+                      </p>
+                      <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm">
+                        <div className="flex items-center">
+                          <User className="w-4 h-4 mr-2 text-primary dark:text-primary-light" />
+                          <span>{getShortenedAddress(userProfile.walletAddress)}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <FileText className="w-4 h-4 mr-2 text-primary dark:text-primary-light" />
+                          <span>{transactions.length} Transactions</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Boxes className="w-4 h-4 mr-2 text-primary dark:text-primary-light" />
+                          <span>{blocks.length} Blocks</span>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-4 text-sm">
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 mr-2 text-green-700 dark:text-text-green-400" />
+                          <span>{userProfile.followers} Followers</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Users  className="w-4 h-4 mr-2  text-green-700 dark:text-text-green-400" />
+                          <span>{userProfile.following} Following</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-4 text-sm">
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2 text-green-700 dark:text-text-green-400" />
-                      <span>{userProfile?.followers} Followers</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Users  className="w-4 h-4 mr-2  text-green-700 dark:text-text-green-400" />
-                      <span>{userProfile?.following} Following</span>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                <button
-                  className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'profile' ? 'text-primary dark:text-primary-light border-b-2 border-primary dark:border-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                  onClick={() => setActiveTab('profile')}
-                >
-                  Profile
-                </button>
-                <button
-                  className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'feed' ? 'text-primary dark:text-primary-light border-b-2 border-primary dark:border-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                  onClick={() => setActiveTab('feed')}
-                >
-                  Feed
-                </button>
-                <button
-                  className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'blocks' ? 'text-primary dark:text-primary-light border-b-2 border-primary dark:border-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                  onClick={() => setActiveTab('blocks')}
-                >
-                  Blocks
-                </button>
-              </div>
-              <div className="p-6">
-                {activeTab === 'profile' && <ProfileUpdateForm onProfileUpdate={setUserProfile} />}
-                {activeTab === 'feed' && <UserFeed />}
-                {activeTab === 'blocks' && <UserBlocks />}
-              </div>
-            </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                  <div className="flex border-b border-gray-200 dark:border-gray-700">
+                    <button
+                      className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'profile' ? 'text-primary dark:text-primary-light border-b-2 border-primary dark:border-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                      onClick={() => setActiveTab('profile')}
+                    >
+                      Profile
+                    </button>
+                    <button
+                      className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'feed' ? 'text-primary dark:text-primary-light border-b-2 border-primary dark:border-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                      onClick={() => setActiveTab('feed')}
+                    >
+                      Feed
+                    </button>
+                    <button
+                      className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'blocks' ? 'text-primary dark:text-primary-light border-b-2 border-primary dark:border-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+                      onClick={() => setActiveTab('blocks')}
+                    >
+                      Blocks
+                    </button>
+                  </div>
+                  <div className="p-6">
+                    {activeTab === 'profile' && <ProfileUpdateForm onProfileUpdate={setUserProfile} />}
+                    {activeTab === 'feed' && <UserFeed transactions={transactions} />}
+                    {activeTab === 'blocks' && <UserBlocks blocks={blocks} />}
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
+      {alertState.type && (
+        <MessageAlert
+          message={alertState.message}
+          onClose={() => setAlertState({ message: '', type: null })}
+          type={alertState.type}
+        />
+      )}
     </div>
   )
 }

@@ -627,3 +627,92 @@
 // uint256: totalDonations 0
 
 
+
+
+// 'use client'
+
+// import React, { useState } from 'react'
+// import { MessageAlert } from './message-alert'
+// import { Button } from "@/components/ui/button"
+
+// export default function AlertExamples() {
+//   const [activeAlert, setActiveAlert] = useState<string | null>(null)
+
+//   const showAlert = (type: string) => {
+//     setActiveAlert(type)
+//     setTimeout(() => setActiveAlert(null), 3000)
+//   }
+
+//   return (
+//     <div className="p-8 space-y-4">
+//       <h1 className="text-2xl font-bold mb-4">Alert Examples</h1>
+      
+//       {/* Info Alert */}
+//       <Button onClick={() => showAlert('info')} variant="outline">
+//         Show Info Alert
+//       </Button>
+//       {activeAlert === 'info' && (
+//         <MessageAlert
+//           message="This is an informational message."
+//           onClose={() => setActiveAlert(null)}
+//           type="info"
+//         />
+//       )}
+
+//       {/* Success Alert */}
+//       <Button onClick={() => showAlert('success')} variant="outline">
+//         Show Success Alert
+//       </Button>
+//       {activeAlert === 'success' && (
+//         <MessageAlert
+//           message="Operation completed successfully!"
+//           onClose={() => setActiveAlert(null)}
+//           type="success"
+//         />
+//       )}
+
+//       {/* Warning Alert */}
+//       <Button onClick={() => showAlert('warning')} variant="outline">
+//         Show Warning Alert
+//       </Button>
+//       {activeAlert === 'warning' && (
+//         <MessageAlert
+//           message="Please be cautious with this action."
+//           onClose={() => setActiveAlert(null)}
+//           type="warning"
+//         />
+//       )}
+
+//       {/* Error Alert */}
+//       <Button onClick={() => showAlert('error')} variant="outline">
+//         Show Error Alert
+//       </Button>
+//       {activeAlert === 'error' && (
+//         <MessageAlert
+//           message="An error occurred. Please try again."
+//           onClose={() => setActiveAlert(null)}
+//           type="error"
+//         />
+//       )}
+
+//       {/* Custom Alert */}
+//       <Button onClick={() => showAlert('custom')} variant="outline">
+//         Show Custom Alert
+//       </Button>
+//       {activeAlert === 'custom' && (
+//         <MessageAlert
+//           message={
+//             <div className="flex items-center">
+//               <svg className="w-6 h-6 mr-2 text-purple-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+//                 <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+//               </svg>
+//               <span>This is a custom alert with an icon!</span>
+//             </div>
+//           }
+//           onClose={() => setActiveAlert(null)}
+//           type="info"
+//         />
+//       )}
+//     </div>
+//   )
+// }

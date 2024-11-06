@@ -1,5 +1,5 @@
-import config from "../wagmi";
 import { readContract, writeContract, waitForTransactionReceipt } from "@wagmi/core";
+import  config  from "../wagmi";
 import { ABI, deployedAddress } from "./deployed-contract";
 
 enum MediaType {
@@ -7,39 +7,48 @@ enum MediaType {
     Image = 1,
     Video = 2
 }
+interface TransactionResult<T = any> {
+    success: boolean;
+    message: string;
+    data?: T;
+}
 
-// Function to create a new transaction
-export const createTransaction = async (ipfsHash: string, title: string, description: string, mediaType: MediaType) => {
+const handleContractError = (error: unknown): TransactionResult => {
+    console.error("Contract error:", error);
+    if (error instanceof Error) {
+        if (error.message.includes("user rejected transaction")) {
+            return { success: false, message: "Transaction was rejected by the user." };
+        }
+        if (error.message.includes("insufficient funds")) {
+            return { success: false, message: "Insufficient funds to complete the transaction." };
+        }
+        // Add more specific error checks here based on your contract's error messages
+        return { success: false, message: error.message };
+    }
+    return { success: false, message: "An unexpected error occurred." };
+};
+
+export const createTransaction = async (ipfsHash: string, title: string, description: string, mediaType: MediaType): Promise<TransactionResult> => {
+
     try {
-        // Write the transaction
         const txHash = await writeContract(config, {
             address: deployedAddress,
             abi: ABI,
             functionName: "createTransaction",
-            args: [ipfsHash, title, description, MediaType[mediaType] as unknown as number],
+            args: [ipfsHash, title, description, mediaType],
         });
 
-        // Wait for the transaction receipt
-        const transaction = await waitForTransactionReceipt(config, {
-            hash: txHash,
-        });
-
-        // Check the transaction status
-        if (transaction.status === "reverted") {
-            alert("Transaction creation failed. Transaction reverted.");
-        } else {
-            alert("Transaction created successfully!");
-            return transaction;
+        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+        if (receipt.status === "reverted") {
+            return { success: false, message: "Transaction creation failed. Transaction reverted." };
         }
+        return { success: true, message: "Transaction created successfully!", data: receipt };
     } catch (error) {
-        console.error("Error creating transaction:", error);
-        alert("Transaction creation failed. Please check the console for more details.");
+        return handleContractError(error);
     }
 };
 
-
-// Function to create a new block
-export const createBlock = async (_name: string, _description: string, _category: string) => {
+export const createBlock = async (_name: string, _description: string, _category: string): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -50,86 +59,72 @@ export const createBlock = async (_name: string, _description: string, _category
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Block creation failed. Transaction reverted.");
-        } else {
-            alert("Block created successfully!");
-            return receipt;
+            return { success: false, message: "Block creation failed. Transaction reverted." };
         }
+        return { success: true, message: "Block created successfully!", data: receipt };
     } catch (error) {
-        console.error("Error creating block:", error);
-        alert("Block creation failed.");
+        return handleContractError(error);
     }
 };
 
+export const addTransactionToBlock = async (blockId: bigint, transactionId: bigint): Promise<TransactionResult> => {
+    try {
+        const txHash = await writeContract(config, {
+            address: deployedAddress,
+            abi: ABI,
+            functionName: "addTransactionToBlock",
+            args: [blockId, transactionId],
+        });
 
-// Function to add a transaction to a block
-export const addTransactionToBlock = async (blockId: bigint, transactionId: bigint,) => {
-  try {
-      const txHash = await writeContract(config, {
-          address: deployedAddress,
-          abi: ABI,
-          functionName: "addTransactionToBlock",
-          args: [blockId, transactionId],
-      });
-
-      const receipt = await waitForTransactionReceipt(config, { hash: txHash });
-      if (receipt.status === "reverted") {
-          alert("Adding transaction to block failed. Transaction reverted.");
-      } else {
-          alert("Transaction added to block successfully!");
-      }
-  } catch (error) {
-      console.error("Error adding transaction to block:", error);
-      alert("Adding transaction to block failed.");
-  }
+        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+        if (receipt.status === "reverted") {
+            return { success: false, message: "Adding transaction to block failed. Transaction reverted." };
+        }
+        return { success: true, message: "Transaction added to block successfully!" };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };
 
-// Function to update admin
-export const updateAdmin = async (_newAdmin: `0x${string}`) => {
-  try {
-      const txHash = await writeContract(config, {
-          address: deployedAddress,
-          abi: ABI,
-          functionName: "updateAdmin",
-          args: [_newAdmin],
-      });
+export const updateAdmin = async (_newAdmin: `0x${string}`): Promise<TransactionResult> => {
+    try {
+        const txHash = await writeContract(config, {
+            address: deployedAddress,
+            abi: ABI,
+            functionName: "updateAdmin",
+            args: [_newAdmin],
+        });
 
-      const receipt = await waitForTransactionReceipt(config, { hash: txHash });
-      if (receipt.status === "reverted") {
-          alert("Updating admin failed. Transaction reverted.");
-      } else {
-          alert("Admin updated successfully!");
-      }
-  } catch (error) {
-      console.error("Error updating admin:", error);
-      alert("Updating admin failed.");
-  }
+        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+        if (receipt.status === "reverted") {
+            return { success: false, message: "Updating admin failed. Transaction reverted." };
+        }
+        return { success: true, message: "Admin updated successfully!" };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };
 
-// Function to update user profile
-export const updateProfile = async (username: string, bio: string, profilePicture: string) => {
-  try {
-      const txHash = await writeContract(config, {
-          address: deployedAddress,
-          abi: ABI,
-          functionName: "updateProfile",
-          args: [username, bio, profilePicture],
-      });
+export const updateProfile = async (username: string, bio: string, profilePicture: string): Promise<TransactionResult> => {
+    try {
+        const txHash = await writeContract(config, {
+            address: deployedAddress,
+            abi: ABI,
+            functionName: "updateProfile",
+            args: [username, bio, profilePicture],
+        });
 
-      const receipt = await waitForTransactionReceipt(config, { hash: txHash });
-      if (receipt.status === "reverted") {
-          alert("Updating profile failed. Transaction reverted.");
-      } else {
-          alert("Profile updated successfully!");
-      }
-  } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Updating profile failed.");
-  }
+        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+        if (receipt.status === "reverted") {
+            return { success: false, message: "Updating profile failed. Transaction reverted." };
+        }
+        return { success: true, message: "Profile updated successfully!" };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };
 
-// Function to like a transaction
-export const likeTransaction = async (_transactionId: bigint) => {
+export const likeTransaction = async (_transactionId: bigint): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -140,18 +135,15 @@ export const likeTransaction = async (_transactionId: bigint) => {
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Liking transaction failed. Transaction reverted.");
-        } else {
-            alert("Transaction liked successfully!");
+            return { success: false, message: "Liking transaction failed. Transaction reverted." };
         }
+        return { success: true, message: "Transaction liked successfully!" };
     } catch (error) {
-        console.error("Error liking transaction:", error);
-        alert("Liking transaction failed.");
+        return handleContractError(error);
     }
 };
 
-// Function to follow a user
-export const followUser = async (_userToFollow: `0x${string}`) => {
+export const followUser = async (_userToFollow: `0x${string}`): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -162,18 +154,15 @@ export const followUser = async (_userToFollow: `0x${string}`) => {
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Following user failed. Transaction reverted.");
-        } else {
-            alert("User followed successfully!");
+            return { success: false, message: "Following user failed. Transaction reverted." };
         }
+        return { success: true, message: "User followed successfully!" };
     } catch (error) {
-        console.error("Error following user:", error);
-        alert("Following user failed.");
+        return handleContractError(error);
     }
 };
 
-// Function to add a comment to a transaction
-export const addComment = async (_transactionId: bigint, _text: string) => {
+export const addComment = async (_transactionId: bigint, _text: string): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -184,18 +173,15 @@ export const addComment = async (_transactionId: bigint, _text: string) => {
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Adding comment failed. Transaction reverted.");
-        } else {
-            alert("Comment added successfully!");
+            return { success: false, message: "Adding comment failed. Transaction reverted." };
         }
+        return { success: true, message: "Comment added successfully!" };
     } catch (error) {
-        console.error("Error adding comment:", error);
-        alert("Adding comment failed.");
+        return handleContractError(error);
     }
 };
 
-// Function to delete a comment from a transaction
-export const deleteComment = async (_transactionId: bigint, _commentIndex: bigint) => {
+export const deleteComment = async (_transactionId: bigint, _commentIndex: bigint): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -206,41 +192,35 @@ export const deleteComment = async (_transactionId: bigint, _commentIndex: bigin
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Deleting comment failed. Transaction reverted.");
-        } else {
-            alert("Comment deleted successfully!");
+            return { success: false, message: "Deleting comment failed. Transaction reverted." };
         }
+        return { success: true, message: "Comment deleted successfully!" };
     } catch (error) {
-        console.error("Error deleting comment:", error);
-        alert("Deleting comment failed.");
+        return handleContractError(error);
     }
 };
 
-// Function to donate to a Canvas Transaction
-export const donateToTransaction = async (transactionId: bigint, amount: bigint) => {
-  try {
-      const txHash = await writeContract(config, {
-          address: deployedAddress,
-          abi: ABI,
-          functionName: "donateToTransaction",
-          args: [transactionId],
-          value: amount,
-      });
+export const donateToTransaction = async (transactionId: bigint, amount: bigint): Promise<TransactionResult> => {
+    try {
+        const txHash = await writeContract(config, {
+            address: deployedAddress,
+            abi: ABI,
+            functionName: "donateToTransaction",
+            args: [transactionId],
+            value: amount,
+        });
 
-      const receipt = await waitForTransactionReceipt(config, { hash: txHash });
-      if (receipt.status === "reverted") {
-          alert("Donation failed. Transaction reverted.");
-      } else {
-          alert("Donation made successfully!");
-      }
-  } catch (error) {
-      console.error("Error making donation:", error);
-      alert("Donation failed.");
-  }
+        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+        if (receipt.status === "reverted") {
+            return { success: false, message: "Donation failed. Transaction reverted." };
+        }
+        return { success: true, message: "Donation made successfully!" };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };
 
-// Function to withdraw donations from a transaction
-export const withdrawDonations = async (_transactionId: bigint) => {
+export const withdrawDonations = async (_transactionId: bigint): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -251,18 +231,15 @@ export const withdrawDonations = async (_transactionId: bigint) => {
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Withdrawing donations failed. Transaction reverted.");
-        } else {
-            alert("Donations withdrawn successfully!");
+            return { success: false, message: "Withdrawing donations failed. Transaction reverted." };
         }
+        return { success: true, message: "Donations withdrawn successfully!" };
     } catch (error) {
-        console.error("Error withdrawing donations:", error);
-        alert("Withdrawing donations failed.");
+        return handleContractError(error);
     }
 };
 
-// Function to withdraw admin funds
-export const withdrawAdminFunds = async () => {
+export const withdrawAdminFunds = async (): Promise<TransactionResult> => {
     try {
         const txHash = await writeContract(config, {
             address: deployedAddress,
@@ -272,16 +249,15 @@ export const withdrawAdminFunds = async () => {
 
         const receipt = await waitForTransactionReceipt(config, { hash: txHash });
         if (receipt.status === "reverted") {
-            alert("Withdrawing admin funds failed. Transaction reverted.");
-        } else {
-            alert("Admin funds withdrawn successfully!");
+            return { success: false, message: "Withdrawing admin funds failed. Transaction reverted." };
         }
+        return { success: true, message: "Admin funds withdrawn successfully!" };
     } catch (error) {
-        console.error("Error withdrawing admin funds:", error);
-        alert("Withdrawing admin funds failed.");
+        return handleContractError(error);
     }
 };
-export const getDonorsAndDonations = async (transactionId: bigint) => {
+
+export const getDonorsAndDonations = async (transactionId: bigint): Promise<TransactionResult<{ donors: { address: string; amount: number }[]; total: number }>> => {
     try {
         const [donorsAddresses, donations] = await readContract(config, {
             abi: ABI,
@@ -292,19 +268,22 @@ export const getDonorsAndDonations = async (transactionId: bigint) => {
 
         const donors = donorsAddresses.map((address, index) => ({
             address,
-            amount: donations[index] ? Number(donations[index]) : 0, // Ensure it converts to number
+            amount: donations[index] ? Number(donations[index]) : 0,
         }));
 
-        return { donors, total: donations.reduce((acc, amt) => acc + Number(amt), 0) }; // Example to calculate total
+        const total = donations.reduce((acc, amt) => acc + Number(amt), 0);
+
+        return { 
+            success: true, 
+            message: "Donors and donations fetched successfully", 
+            data: { donors, total } 
+        };
     } catch (error) {
-        console.error("Error fetching donors and donations:", error);
-        return { donors: [], total: 0 }; // Return a total of 0 on error
+        return handleContractError(error);
     }
 };
 
-
-// Fetch User Transactions
-export const getUserTransactions = async (userAddress: `0x${string}`) => {
+export const getUserTransactions = async (userAddress: `0x${string}`): Promise<TransactionResult<readonly any[]>> => {
     try {
         const transactions = await readContract(config, {
             abi: ABI,
@@ -312,14 +291,14 @@ export const getUserTransactions = async (userAddress: `0x${string}`) => {
             functionName: "getUserTransactions",
             args: [userAddress],
         });
-        // console.log('from contract intraction', transactions)
-        return transactions;
+        return { success: true, message: "User transactions fetched successfully", data: transactions };
     } catch (error) {
-        console.error("Error fetching user transactions:", error);
-        return [];
+        return handleContractError(error);
     }
 };
-export const getATransactions = async (id: bigint) => {
+
+
+export const getATransactions = async (id: bigint): Promise<TransactionResult<any>> => {
     try {
         const transactions = await readContract(config, {
             abi: ABI,
@@ -327,16 +306,13 @@ export const getATransactions = async (id: bigint) => {
             functionName: "transactions",
             args: [id],
         });
-        // console.log('from contract intraction', transactions)
-        return transactions;
+        return { success: true, message: "Transaction fetched successfully", data: transactions };
     } catch (error) {
-        console.error("Error fetching user transactions:", error);
-        return [];
+        return handleContractError(error);
     }
 };
 
-// Fetch User Blocks
-export const getUserBlocks = async (userAddress: `0x${string}`) => {
+export const getUserBlocks = async (userAddress: `0x${string}`): Promise<TransactionResult<readonly any[]>> => {
     try {
         const blocks = await readContract(config, {
             abi: ABI,
@@ -344,11 +320,9 @@ export const getUserBlocks = async (userAddress: `0x${string}`) => {
             functionName: "getUserBlocks",
             args: [userAddress],
         });
-
-        return blocks;
+        return { success: true, message: "User blocks fetched successfully", data: blocks };
     } catch (error) {
-        console.error("Error fetching user blocks:", error);
-        return [];
+        return handleContractError(error);
     }
 };
 
@@ -389,9 +363,7 @@ export const getAllBlocks = async () => {
     }
 };
 
-
-// Fetch Block Details
-export const getBlockDetails = async (blockId: bigint) => {
+export const getBlockDetails = async (blockId: bigint): Promise<TransactionResult<any>> => {
     try {
         const blockDetails = await readContract(config, {
             abi: ABI,
@@ -399,16 +371,13 @@ export const getBlockDetails = async (blockId: bigint) => {
             functionName: "blocks",
             args: [blockId],
         });
-        // console.log(blockDetails)
-        return blockDetails;
+        return { success: true, message: "Block details fetched successfully", data: blockDetails };
     } catch (error) {
-        console.error("Error fetching block details:", error);
-        return null;
+        return handleContractError(error);
     }
 };
 
-// Fetch User Profile
-export const getUserProfile = async (userAddress: `0x${string}`) => {
+export const getUserProfile = async (userAddress: `0x${string}`): Promise<TransactionResult<any>> => {
     try {
         const userProfile = await readContract(config, {
             abi: ABI,
@@ -416,50 +385,41 @@ export const getUserProfile = async (userAddress: `0x${string}`) => {
             functionName: "userProfiles",
             args: [userAddress],
         });
-
-        return userProfile;
+        return { success: true, message: "User profile fetched successfully", data: userProfile };
     } catch (error) {
-        console.error("Error fetching user profile:", error);
-        return null;
+        return handleContractError(error);
     }
 };
 
-// Fetch followers of a user
-export const getFollowers = async (_user: `0x${string}`) => {
-  try {
-      const followers = await readContract(config, {
-          abi: ABI,
-          address: deployedAddress,
-          functionName: "getFollowers",
-          args: [_user],
-      });
-
-      return followers;
-  } catch (error) {
-      console.error("Error fetching followers:", error);
-      return [];
-  }
+export const getFollowers = async (_user: `0x${string}`): Promise<TransactionResult<readonly string[]>> => {
+    try {
+        const followers = await readContract(config, {
+            abi: ABI,
+            address: deployedAddress,
+            functionName: "getFollowers",
+            args: [_user],
+        });
+        return { success: true, message: "Followers fetched successfully", data: followers };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };
 
-// Fetch users being followed by a user
-export const getFollowing = async (_user: `0x${string}`) => {
-  try {
-      const following = await readContract(config, {
-          abi: ABI,
-          address: deployedAddress,
-          functionName: "getFollowing",
-          args: [_user],
-      });
-
-      return following;
-  } catch (error) {
-      console.error("Error fetching following list:", error);
-      return [];
-  }
+export const getFollowing = async (_user: `0x${string}`): Promise<TransactionResult<readonly string[]>> => {
+    try {
+        const following = await readContract(config, {
+            abi: ABI,
+            address: deployedAddress,
+            functionName: "getFollowing",
+            args: [_user],
+        });
+        return  { success: true, message: "Following list fetched successfully", data: following };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };
 
-// Fetch users being followed by a user
-export const isFollowing = async (follower: `0x${string}`, following: `0x${string}`) => {
+export const isFollowing = async (follower: `0x${string}`, following: `0x${string}`): Promise<TransactionResult<boolean>> => {
     try {
         const isUserFollowing = await readContract(config, {
             abi: ABI,
@@ -467,28 +427,22 @@ export const isFollowing = async (follower: `0x${string}`, following: `0x${strin
             functionName: "isFollowing",
             args: [follower, following],
         });
-  
-        return isUserFollowing;
+        return { success: true, message: "Follow status checked successfully", data: isUserFollowing };
     } catch (error) {
-        console.error("Error checking follow status:", error);
-        return false; 
+        return handleContractError(error);
     }
-  };
-  
+};
 
-// Fetch comments on a transaction
-export const getTransactionComments = async (_transactionId: bigint) => {
-  try {
-      const comments = await readContract(config, {
-          abi: ABI,
-          address: deployedAddress,
-          functionName: "getTransactionComments",
-          args: [_transactionId],
-      });
-
-      return comments;
-  } catch (error) {
-      console.error("Error fetching transaction comments:", error);
-      return [];
-  }
+export const getTransactionComments = async (_transactionId: bigint): Promise<TransactionResult<readonly any[]>> => {
+    try {
+        const comments = await readContract(config, {
+            abi: ABI,
+            address: deployedAddress,
+            functionName: "getTransactionComments",
+            args: [_transactionId],
+        });
+        return { success: true, message: "Transaction comments fetched successfully", data: comments };
+    } catch (error) {
+        return handleContractError(error);
+    }
 };

@@ -52,6 +52,14 @@ export interface UserProfileData {
   profilePicture: string
 }
 
+// Add the TransactionResult type
+export interface TransactionResult<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
+
 export interface TransactionPostActionsProps {
   item: {
       id: bigint;

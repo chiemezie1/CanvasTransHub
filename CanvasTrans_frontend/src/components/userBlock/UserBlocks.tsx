@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Folder, FileText, Image, Film } from 'lucide-react'
 import { getUserBlocks, getATransactions } from "@/contracts/contractInteractions"
 import { useAccount } from "wagmi"
+import { MessageAlert } from '../MessageAlert'
 
 interface Post {
   id: string
@@ -19,28 +20,43 @@ interface Block {
   description: string
   category: string
   owner: string
-  transactionIds: number[]
+  transactionIds: bigint[]
   posts: Post[]
 }
 
-export default function UserBlocks() {
-  const { address, isConnected } = useAccount()
+interface TransactionResult {
+  success: boolean
+  message: string
+  data?: any
+}
+
+export interface UserBlocksProps {
+  blocks: Block[]
+}
+
+export default function UserBlocks({ blocks: initialBlocks }: UserBlocksProps) {
+ const { address, isConnected } = useAccount()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [alertState, setAlertState] = useState<{ message: string; type: 'info' | 'success' | 'warning' | 'error' | null }>({ message: '', type: null })
 
   useEffect(() => {
     const fetchUserBlocks = async () => {
       if (!isConnected || !address) {
-        alert("Please connect your wallet first.")
+        setAlertState({ message: "Please connect your wallet to view your blocks.", type: 'warning' })
         setIsLoading(false)
         return
       }
       try {
         setIsLoading(true)
-        const userBlockDetails = await getUserBlocks(address)
+        const userBlocksResult: TransactionResult = await getUserBlocks(address)
         
-        const userBlocks = await Promise.all(userBlockDetails.map(async (userBlockDetail: any) => {
+        if (!userBlocksResult.success) {
+          throw new Error(userBlocksResult.message)
+        }
+
+        const userBlocks = await Promise.all(userBlocksResult.data.map(async (userBlockDetail: any) => {
           const id = userBlockDetail.id.toString()
           const name = userBlockDetail.name || 'Untitled User Block'
           const description = userBlockDetail.description || 'No description provided.'
@@ -49,12 +65,17 @@ export default function UserBlocks() {
           const transactionIds = userBlockDetail.transactionIds || []
 
           const posts = await Promise.all(transactionIds.map(async (txId: bigint) => {
-            const transactionDetail = await getATransactions(txId)
+            const transactionResult: TransactionResult = await getATransactions(txId)
+            if (!transactionResult.success) {
+              console.error(`Failed to fetch transaction ${txId}: ${transactionResult.message}`)
+              return null
+            }
+            const transactionDetail = transactionResult.data
             return {
               id: txId.toString(),
               title: transactionDetail[2] || "Untitled Post",
               type: transactionDetail[4]?.toString() === '1' ? 'image' : transactionDetail[4]?.toString() === '2' ? 'video' : 'text',
-              likes: transactionDetail[7] || 0
+              likes: Number(transactionDetail[7]) || 0
             }
           }))
 
@@ -65,7 +86,7 @@ export default function UserBlocks() {
             category,
             owner,
             transactionIds,
-            posts,
+            posts: posts.filter((post): post is Post => post !== null),
           }
         }))
 
@@ -73,6 +94,7 @@ export default function UserBlocks() {
         console.log("User Blocks:", userBlocks)
       } catch (error) {
         console.error("Error fetching user blocks:", error)
+        setAlertState({ message: "An error occurred while fetching your blocks. Please try again.", type: 'error' })
       } finally {
         setIsLoading(false)
       }
@@ -106,6 +128,13 @@ export default function UserBlocks() {
 
   return (
     <div className="space-y-6 p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+      {alertState.type && (
+        <MessageAlert
+          message={alertState.message}
+          onClose={() => setAlertState({ message: '', type: null })}
+          type={alertState.type}
+        />
+      )}
       {blocks.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400">No blocks found.</div>
       ) : (

@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { UserProfileModalType } from '@/types/types'
 import { useAccount } from "wagmi"
+import { MessageAlert } from '../MessageAlert'
+
+type TransactionResult<T> = {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
 
 export default function UserProfileModal({ userAddress, onClose }: UserProfileModalType) {
   const { address: connectedAccount, isConnected } = useAccount();
@@ -21,8 +29,8 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
         setUserProfile(profile)
 
         if (isConnected && connectedAccount) {
-          const followingStatus = await isFollowing(connectedAccount, userAddress)
-          setIsFollowingUser(followingStatus)
+          const followingStatus: TransactionResult<boolean> = await isFollowing(connectedAccount, userAddress)
+          setIsFollowingUser(followingStatus.success ? followingStatus.data ?? false : false)
         }
       } catch (error) {
         console.error("Failed to fetch user profile:", error)
@@ -31,6 +39,7 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
     }
     fetchUserProfile()
   }, [userAddress, connectedAccount, isConnected])
+
 
   const handleFollow = async () => {
     if (userAddress.toLowerCase() === connectedAccount?.toLowerCase()) {
@@ -49,6 +58,10 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCloseError = () => {
+    setError(null)
   }
 
   return (
@@ -79,7 +92,13 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400">Loading user profile...</p>
         )}
-        {error && <p className="text-red-500 text-center">{error}</p>}
+        {error && (
+          <MessageAlert
+            message={error}
+            onClose={handleCloseError}
+            type="error"
+          />
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, MessageCircle, Plus, Image as ImageIcon, Film, FileText, Loader2 } from 'lucide-react'
+import { Heart, MessageCircle, Plus, Image as ImageIcon, Film, FileText } from 'lucide-react'
 import { getUserTransactions, getUserBlocks, addTransactionToBlock } from "@/contracts/contractInteractions"
 import { useAccount } from "wagmi"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MessageAlert } from '../MessageAlert'
 
-interface Post {
+interface CanvasTransItem {
   id: string;
   ipfsHash: string;
   title: string;
@@ -29,23 +30,39 @@ interface Block {
   category: string;
 }
 
-export default function UserFeed() {
-  const [posts, setPosts] = useState<Post[]>([]);
+interface TransactionResult {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
+export interface UserFeedProps {
+  transactions: CanvasTransItem[]
+}
+
+export default function UserFeed({ transactions: initialTransactions }: UserFeedProps) {
+  const [posts, setPosts] = useState<CanvasTransItem[]>([]);
   const { address, isConnected } = useAccount();
   const [showBlockDropdown, setShowBlockDropdown] = useState<{ [postId: string]: boolean }>({});
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [alertState, setAlertState] = useState<{ message: string; type: 'info' | 'success' | 'warning' | 'error' | null }>({ message: '', type: null });
 
   useEffect(() => {
     const fetchUserTransactions = async () => {
       if (!isConnected || !address) {
-        console.warn("Please connect your wallet first.");
+        setAlertState({ message: "Please connect your wallet to view your feed.", type: 'warning' });
         setIsLoading(false);
         return;
       }
+      
       try {
         setIsLoading(true);
-        const userTransactions = await getUserTransactions(address);
+        const result: TransactionResult = await getUserTransactions(address);
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+        const userTransactions = result.data;
         const formattedPosts = userTransactions.map((tx: any) => ({
           id: tx.id.toString(),
           ipfsHash: tx.ipfsHash || '',
@@ -64,6 +81,7 @@ export default function UserFeed() {
         await fetchUserBlocks();
       } catch (error) {
         console.error("Error fetching transactions:", error);
+        setAlertState({ message: "Failed to fetch transactions. Please try again.", type: 'error' });
       } finally {
         setIsLoading(false);
       }
@@ -72,14 +90,19 @@ export default function UserFeed() {
     const fetchUserBlocks = async () => {
       if (!address) return;
       try {
-        const userBlocks = await getUserBlocks(address);
-        setBlocks(userBlocks.map(block => ({
+        const result: TransactionResult = await getUserBlocks(address);
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+        const userBlocks = result.data;
+        setBlocks(userBlocks.map((block: any) => ({
           id: block.id.toString(),
           name: block.name,
           category: block.category
         })));
       } catch (error) {
         console.error("Error fetching blocks:", error);
+        setAlertState({ message: "Failed to fetch blocks. Some features may be limited.", type: 'warning' });
       }
     };
 
@@ -94,17 +117,25 @@ export default function UserFeed() {
   };
 
   const handleBlockSelect = async (selectedBlockId: string, postId: string) => {
-    await addTransactionToBlock(BigInt(postId), BigInt(selectedBlockId));
-    setShowBlockDropdown(prev => ({ ...prev, [postId]: false }));
+    try {
+      const result: TransactionResult = await addTransactionToBlock(BigInt(selectedBlockId), BigInt(postId));
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      setShowBlockDropdown(prev => ({ ...prev, [postId]: false }));
 
-    const selectedBlock = blocks.find(block => block.id === selectedBlockId);
-    
-    // Update post's block data locally
-    setPosts(prevPosts => prevPosts.map(post => 
-      post.id === postId 
-        ? { ...post, transBlock: Number(selectedBlockId), blockCategory: selectedBlock?.category || null, blockId: selectedBlockId } 
-        : post
-    ));
+      const selectedBlock = blocks.find(block => block.id === selectedBlockId);
+      
+      setPosts(prevPosts => prevPosts.map(post => 
+        post.id === postId 
+          ? { ...post, transBlock: Number(selectedBlockId), blockCategory: selectedBlock?.category || null, blockId: selectedBlockId } 
+          : post
+      ));
+      setAlertState({ message: "Transaction added to block successfully!", type: 'success' });
+    } catch (error) {
+      console.error("Error adding transaction to block:", error);
+      setAlertState({ message: "Failed to add transaction to block. Please try again.", type: 'error' });
+    }
   };
 
   const getPostIcon = (type: string) => {
@@ -116,13 +147,24 @@ export default function UserFeed() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        </div>
-      ) : posts.length === 0 ? (
+      {alertState.type && (
+        <MessageAlert
+          message={alertState.message}
+          onClose={() => setAlertState({ message: '', type: null })}
+          type={alertState.type}
+        />
+      )}
+      {posts.length === 0 ? (
         <Card className="text-center p-8">
           <p className="text-muted-foreground">
             No posts found. Start creating or interacting with content to see it here!

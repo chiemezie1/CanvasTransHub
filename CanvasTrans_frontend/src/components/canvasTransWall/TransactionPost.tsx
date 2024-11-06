@@ -12,8 +12,20 @@ interface TransactionPostProps extends UserProfileModalProps {
   isLoading: boolean
 }
 
+interface TransactionResult<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
+interface UserProfile {
+  name: string;
+  bio: string;
+  profilePicture: string;
+}
+
 export default function TransactionPost({ item, isLoading }: TransactionPostProps) {
-  const [userProfile, setUserProfile] = useState<{ profilePicture: string } | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isContentLoading, setIsContentLoading] = useState(true)
 
@@ -21,9 +33,9 @@ export default function TransactionPost({ item, isLoading }: TransactionPostProp
     const fetchUserProfile = async () => {
       setIsContentLoading(true)
       try {
-        const profile = await getUserProfile(item.creator)
-        if (profile) {
-          setUserProfile({ profilePicture: profile[2] || '' })
+        const profileResult: TransactionResult<UserProfile> = await getUserProfile(item.creator)
+        if (profileResult.success && profileResult.data) {
+          setUserProfile(profileResult.data)
         } else {
           setUserProfile(null)
         }
@@ -72,5 +84,3 @@ export default function TransactionPost({ item, isLoading }: TransactionPostProp
     </div>
   )
 }
-
-

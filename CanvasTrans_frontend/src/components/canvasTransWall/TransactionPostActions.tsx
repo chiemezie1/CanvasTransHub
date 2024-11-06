@@ -16,6 +16,7 @@ import { useAccount } from "wagmi"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { MessageAlert } from '@/components/MessageAlert'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,57 +25,98 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { TransactionPostActionsProps, Donor, Comment } from '@/types/types'
 
+interface TransactionResult<T> {
+    success: boolean;
+    data?: T;
+    message?: string;
+}
+
+interface RawDonor {
+    address: `0x${string}`;
+    amount: bigint;
+}
+
+interface RawComment {
+    commenter: `0x${string}`;
+    text: string;
+    timestamp: bigint;
+}
+
+interface ApiDonor {
+    address: string;
+    amount: number;
+}
+
+interface ApiComment {
+    commenter: string;
+    text: string;
+    timestamp: number;
+}
+
 export default function TransactionPostActions({ item }: TransactionPostActionsProps) {
     const [donationAmount, setDonationAmount] = useState<string>('')
     const [showDonationInput, setShowDonationInput] = useState<boolean>(false)
     const [donors, setDonors] = useState<Donor[]>([])
-    const [totalDonations, setTotalDonations] = useState<number>(0)
+    const [totalDonations, setTotalDonations] = useState<bigint>(BigInt(0))
     const [loading, setLoading] = useState<boolean>(false)
-    const [error, setError] = useState<string | null>(null)
+    const [alertState, setAlertState] = useState<{ message: string; type: 'info' | 'success' | 'warning' | 'error' | null }>({ message: '', type: null })
     const [commentText, setCommentText] = useState<string>('')
     const [comments, setComments] = useState<Comment[]>([])
-    const [showDonorList, setShowDonorList] = useState<boolean>(false)
     const [showComments, setShowComments] = useState<boolean>(false)
 
     const { address: connectedAccount, isConnected } = useAccount()
 
     const isCreator = isConnected && item.creator === connectedAccount
 
-    const hasDonations = totalDonations > 0
+    const hasDonations = totalDonations > BigInt(0)
 
     useEffect(() => {
         const fetchDonorsAndComments = async () => {
             setLoading(true)
             try {
                 const transactionId = BigInt(item.id)
-                const { donors, total } = await getDonorsAndDonations(transactionId)
-                const donorsWithProfiles = await Promise.all(
-                    donors.map(async (donor) => {
-                        const profile = await getUserProfile(donor.address)
-                        return {
-                            ...donor,
-                            name: profile ? profile[0] : 'Unknown',
-                            profilePicture: profile ? profile[2] : '',
-                        }
-                    })
-                )
-                setDonors(donorsWithProfiles)
-                setTotalDonations(total || 0)
-                const fetchedComments = await getTransactionComments(transactionId)
-                const commentsWithProfiles = await Promise.all(
-                    fetchedComments.map(async (comment) => {
-                        const profile = await getUserProfile(comment.commenter)
-                        return {
-                            ...comment,
-                            name: profile ? profile[0] : 'Unknown',
-                            profilePicture: profile ? profile[2] : '',
-                        }
-                    })
-                )
-                setComments(commentsWithProfiles)
+                const donorsResult: TransactionResult<{ donors: ApiDonor[]; total: number }> = await getDonorsAndDonations(transactionId)
+                if (donorsResult.success && donorsResult.data) {
+                    const { donors: fetchedDonors, total } = donorsResult.data
+                    const donorsWithProfiles = await Promise.all(
+                        fetchedDonors.map(async (donor: ApiDonor) => {
+                            const profileResult = await getUserProfile(donor.address as `0x${string}`)
+                            return {
+                                address: donor.address as `0x${string}`,
+                                amount: donor.amount,
+                                name: profileResult.success && profileResult.data ? profileResult.data[0] : 'Unknown',
+                                profilePicture: profileResult.success && profileResult.data ? profileResult.data[2] : '',
+                            } as Donor
+                        })
+                    )
+                    setDonors(donorsWithProfiles)
+                    setTotalDonations(BigInt(total))
+                } else {
+                    setAlertState({ message: donorsResult.message || 'Failed to fetch donors', type: 'error' })
+                }
+
+                const commentsResult: TransactionResult<readonly ApiComment[]> = await getTransactionComments(transactionId)
+                if (commentsResult.success && commentsResult.data) {
+                    const commentsWithProfiles = await Promise.all(
+                        commentsResult.data.map(async (comment: ApiComment, index: number) => {
+                            const profileResult = await getUserProfile(comment.commenter as `0x${string}`)
+                            return {
+                                commenter: comment.commenter as `0x${string}`,
+                                text: comment.text,
+                                timestamp: BigInt(comment.timestamp),
+                                index: BigInt(index),
+                                name: profileResult.success && profileResult.data ? profileResult.data[0] : 'Unknown',
+                                profilePicture: profileResult.success && profileResult.data ? profileResult.data[2] : '',
+                            } as Comment
+                        })
+                    )
+                    setComments(commentsWithProfiles)
+                } else {
+                    setAlertState({ message: commentsResult.message || 'Failed to fetch comments', type: 'error' })
+                }
             } catch (error) {
                 console.error("Failed to fetch donors or comments:", error)
-                setError("Failed to fetch data.")
+                setAlertState({ message: "Failed to fetch data.", type: 'error' })
             } finally {
                 setLoading(false)
             }
@@ -84,8 +126,13 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
     }, [item.id])
 
     const handleDonateClick = async () => {
+        if (!isConnected) {
+            setAlertState({ message: "Please connect your wallet to donate.", type: 'warning' })
+            return
+        }
+
         if (!donationAmount || parseFloat(donationAmount) <= 0) {
-            setError("Please enter a valid donation amount.")
+            setAlertState({ message: "Please enter a valid donation amount.", type: 'warning' })
             return
         }
 
@@ -95,113 +142,163 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
 
         setLoading(true)
         try {
-            await donateToTransaction(txId, donationAmountWei)
-            setDonationAmount('')
-            setShowDonationInput(false)
-            const { donors, total } = await getDonorsAndDonations(txId)
-            const donorsWithProfiles = await Promise.all(
-                donors.map(async (donor) => {
-                    const profile = await getUserProfile(donor.address)
-                    return {
-                        ...donor,
-                        name: profile ? profile[0] : 'Unknown',
-                        profilePicture: profile ? profile[2] : '',
-                    }
-                })
-            )
-            setDonors(donorsWithProfiles)
-            setTotalDonations(total || 0)
-            setError(null)
+            const result = await donateToTransaction(txId, donationAmountWei)
+            if (result.success) {
+                setDonationAmount('')
+                setShowDonationInput(false)
+                const donorsResult: TransactionResult<{ donors: ApiDonor[]; total: number }> = await getDonorsAndDonations(txId)
+                if (donorsResult.success && donorsResult.data) {
+                    const { donors: fetchedDonors, total } = donorsResult.data
+                    const donorsWithProfiles = await Promise.all(
+                        fetchedDonors.map(async (donor: ApiDonor) => {
+                            const profileResult = await getUserProfile(donor.address as `0x${string}`)
+                            return {
+                                address: donor.address as `0x${string}`,
+                                amount: donor.amount,
+                                name: profileResult.success && profileResult.data ? profileResult.data[0] : 'Unknown',
+                                profilePicture: profileResult.success && profileResult.data ? profileResult.data[2] : '',
+                            } as Donor
+                        })
+                    )
+                    setDonors(donorsWithProfiles)
+                    setTotalDonations(BigInt(total))
+                }
+                setAlertState({ message: "Donation successful!", type: 'success' })
+            } else {
+                setAlertState({ message: result.message || 'Donation failed', type: 'error' })
+            }
         } catch (error) {
             console.error("Donation failed:", error)
-            setError("Donation failed. Please try again.")
+            setAlertState({ message: "Donation failed. Please try again.", type: 'error' })
         } finally {
             setLoading(false)
         }
     }
 
     const handleLikeClick = async () => {
+        if (!isConnected) {
+            setAlertState({ message: "Please connect your wallet to like.", type: 'warning' })
+            return
+        }
         const txId = BigInt(item.id)
         setLoading(true)
         try {
-            await likeTransaction(txId)
-            setError(null)
+            const result = await likeTransaction(txId)
+            if (result.success) {
+                setAlertState({ message: "Transaction liked successfully!", type: 'success' })
+            } else {
+                setAlertState({ message: result.message || 'Like failed', type: 'error' })
+            }
         } catch (error) {
             console.error("Like failed:", error)
-            setError("Like failed. Please try again.")
+            setAlertState({ message: "Like failed. Please try again.", type: 'error' })
         } finally {
             setLoading(false)
         }
     }
 
     const handleAddComment = async () => {
+        if (!isConnected) {
+            setAlertState({ message: "Please connect your wallet to comment.", type: 'warning' })
+            return
+        }
+
         if (!commentText) {
-            setError("Please enter a comment.")
+            setAlertState({ message: "Please enter a comment.", type: 'warning' })
             return
         }
 
         const txId = BigInt(item.id)
         setLoading(true)
         try {
-            await addComment(txId, commentText)
-            setCommentText('')
-            const fetchedComments = await getTransactionComments(txId)
-            const commentsWithProfiles = await Promise.all(
-                fetchedComments.map(async (comment, index) => {
-                    const profile = await getUserProfile(comment.commenter)
-                    return {
-                        ...comment,
-                        index: BigInt(index),
-                        name: profile ? profile[0] : 'Unknown',
-                        profilePicture: profile ? profile[2] : '',
-                    }
-                })
-            )
-            setComments(commentsWithProfiles)
-            setError(null)
+            const result = await addComment(txId, commentText)
+            if (result.success) {
+                setCommentText('')
+                const commentsResult: TransactionResult<readonly ApiComment[]> = await getTransactionComments(txId)
+                if (commentsResult.success && commentsResult.data) {
+                    const commentsWithProfiles = await Promise.all(
+                        commentsResult.data.map(async (comment: ApiComment, index: number) => {
+                            const profileResult = await getUserProfile(comment.commenter as `0x${string}`)
+                            return {
+                                commenter: comment.commenter as `0x${string}`,
+                                text: comment.text,
+                                timestamp: BigInt(comment.timestamp),
+                                index: BigInt(index),
+                                name: profileResult.success && profileResult.data ? profileResult.data[0] : 'Unknown',
+                                profilePicture: profileResult.success && profileResult.data ? profileResult.data[2] : '',
+                            } as Comment
+                        })
+                    )
+                    setComments(commentsWithProfiles)
+                }
+                setAlertState({ message: "Comment added successfully!", type: 'success' })
+            } else {
+                setAlertState({ message: result.message || 'Failed to add comment', type: 'error' })
+            }
         } catch (error) {
             console.error("Failed to add comment:", error)
-            setError("Failed to add comment. Please try again.")
+            setAlertState({ message: "Failed to add comment. Please try again.", type: 'error' })
         } finally {
             setLoading(false)
         }
     }
 
     const handleDeleteComment = async (index: bigint) => {
+        if (!isConnected) {
+            setAlertState({ message: "Please connect your wallet to delete a comment.", type: 'warning' })
+            return
+        }
         const txId = BigInt(item.id)
         setLoading(true)
         try {
-            await deleteComment(txId, index)
-            const fetchedComments = await getTransactionComments(txId)
-            const commentsWithProfiles = await Promise.all(
-                fetchedComments.map(async (comment) => {
-                    const profile = await getUserProfile(comment.commenter)
-                    return {
-                        ...comment,
-                        name: profile ? profile[0] : 'Unknown',
-                        profilePicture: profile ? profile[2] : '',
-                    }
-                })
-            )
-            setComments(commentsWithProfiles)
-            setError(null)
+            const result = await deleteComment(txId, index)
+            if (result.success) {
+                const commentsResult: TransactionResult<readonly ApiComment[]> = await getTransactionComments(txId)
+                if (commentsResult.success && commentsResult.data) {
+                    const commentsWithProfiles = await Promise.all(
+                        commentsResult.data.map(async (comment: ApiComment, index: number) => {
+                            const profileResult = await getUserProfile(comment.commenter as `0x${string}`)
+                            return {
+                                commenter: comment.commenter as `0x${string}`,
+                                text: comment.text,
+                                timestamp: BigInt(comment.timestamp),
+                                index: BigInt(index),
+                                name: profileResult.success && profileResult.data ? profileResult.data[0] : 'Unknown',
+                                profilePicture: profileResult.success && profileResult.data ? profileResult.data[2] : '',
+                            } as Comment
+                        })
+                    )
+                    setComments(commentsWithProfiles)
+                }
+                setAlertState({ message: "Comment deleted successfully!", type: 'success' })
+            } else {
+                setAlertState({ message: result.message || 'Failed to delete comment', type: 'error' })
+            }
         } catch (error) {
             console.error("Failed to delete comment:", error)
-            setError("Failed to delete comment. Please try again.")
+            setAlertState({ message: "Failed to delete comment. Please try again.", type: 'error' })
         } finally {
             setLoading(false)
         }
     }
 
     const handleWithdraw = async () => {
+        if (!isConnected) {
+            setAlertState({ message: "Please connect your wallet to withdraw.", type: 'warning' })
+            return
+        }
         setLoading(true)
         try {
-            await withdrawDonations(BigInt(item.id))
-            setTotalDonations(0)
-            setError(null)
+            const result = await withdrawDonations(BigInt(item.id))
+            if (result.success) {
+                setTotalDonations(BigInt(0))
+                setAlertState({ message: "Withdrawal successful!", type: 'success' })
+            } else {
+                setAlertState({ message: result.message || 'Withdrawal failed', type: 'error' })
+            }
         } catch (error) {
             console.error("Withdrawal failed:", error)
-            setError("Withdrawal failed. Please try again.")
+            setAlertState({ message: "Withdrawal failed. Please try again.", type: 'error' })
         } finally {
             setLoading(false)
         }
@@ -229,7 +326,7 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
                                 className="flex items-center space-x-1 text-gray-600 hover:text-green-500 dark:text-gray-300 dark:hover:text-green-400"
                             >
                                 <DollarSign className="h-5 w-5" />
-                                <span>{(totalDonations / 1e18).toFixed(4)} ETH</span>
+                                <span>{(Number(totalDonations) / 1e18).toFixed(4)} ETH</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-72 bg-white dark:bg-gray-800">
@@ -240,7 +337,7 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
                                         <AvatarFallback>{donor.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                                     </Avatar>
                                     <span className="flex-grow">{donor.name}</span>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">{(donor.amount / 1e18).toFixed(4)} ETH</span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">{(Number(donor.amount) / 1e18).toFixed(4)} ETH</span>
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -333,7 +430,6 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
                                             <Button variant="ghost" size="sm">
                                                 <MoreHorizontal className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                                             </Button>
-                                        
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className='bg-white dark:bg-gray-800'>
                                             <DropdownMenuItem onClick={() => handleDeleteComment(comment.index ?? BigInt(0))}>
@@ -349,7 +445,13 @@ export default function TransactionPostActions({ item }: TransactionPostActionsP
                     </div>
                 </div>
             )}
-            {error && <p className="text-red-500 dark:text-red-400">{error}</p>}
+            {alertState.type && (
+                <MessageAlert
+                    message={alertState.message}
+                    onClose={() => setAlertState({ message: '', type: null })}
+                    type={alertState.type}
+                />
+            )}
         </div>
     )
 }
