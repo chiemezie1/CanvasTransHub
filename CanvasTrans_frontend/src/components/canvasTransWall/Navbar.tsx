@@ -11,7 +11,7 @@ interface NavbarProps {
   onSidebarToggle: () => void
 }
 
-export default function Navbar({ onCreateClick, onThemeToggle, onSidebarToggle }: NavbarProps) {
+export default function Navbar({ onCreateClick, onThemeToggle }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const toggleMenu = () => {
@@ -23,12 +23,6 @@ export default function Navbar({ onCreateClick, onThemeToggle, onSidebarToggle }
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            {/* <button 
-              onClick={onSidebarToggle} 
-              className="text-foreground hover:text-primary dark:text-foreground-dark dark:hover:text-primary-light mr-4 md:hidden"
-            >
-              <Menu className="h-6 w-6" />
-            </button> */}
            <Link href="/" className="flex items-center space-x-2 group">
           <CanvasTransLogo />
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">CanvasTrans</span>
@@ -45,7 +39,7 @@ export default function Navbar({ onCreateClick, onThemeToggle, onSidebarToggle }
               onClick={onCreateClick}
               className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded"
             >
-              Create Trans
+              Start Creating
             </button>
             <button onClick={onThemeToggle} className="text-foreground hover:text-primary dark:text-foreground-dark dark:hover:text-primary-light">
               <Sun className="h-6 w-6 hidden dark:block" />

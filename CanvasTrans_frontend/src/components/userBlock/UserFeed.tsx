@@ -171,7 +171,7 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
           </p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map((post) => (
             <motion.div
               key={post.id}
