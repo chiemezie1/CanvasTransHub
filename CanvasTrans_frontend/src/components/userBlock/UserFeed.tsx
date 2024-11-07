@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, MessageCircle, Plus, Image as ImageIcon, Film, FileText } from 'lucide-react'
-import { getUserTransactions, getUserBlocks, addTransactionToBlock } from "@/contracts/contractInteractions"
+import { Heart, MessageCircle, Plus, Image as ImageIcon, Film, FileText, DollarSign } from 'lucide-react'
+import { getUserTransactions, getUserBlocks, addTransactionToBlock, withdrawDonations, getDonorsAndDonations } from "@/contracts/contractInteractions"
 import { useAccount } from "wagmi"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MessageAlert } from '../MessageAlert'
+import { MessageAlert } from '@/components/MessageAlert'
 
 interface CanvasTransItem {
   id: string;
@@ -22,6 +22,7 @@ interface CanvasTransItem {
   transBlock: number;
   blockCategory: string | null;
   blockId: string | null;
+  totalDonations: bigint;
 }
 
 interface Block {
@@ -36,11 +37,12 @@ interface TransactionResult {
   data?: any;
 }
 
-export interface UserFeedProps {
-  transactions: CanvasTransItem[]
+interface ApiDonor {
+  donor: string;
+  amount: bigint;
 }
 
-export default function UserFeed({ transactions: initialTransactions }: UserFeedProps) {
+export default function UserFeed() {
   const [posts, setPosts] = useState<CanvasTransItem[]>([]);
   const { address, isConnected } = useAccount();
   const [showBlockDropdown, setShowBlockDropdown] = useState<{ [postId: string]: boolean }>({});
@@ -55,7 +57,7 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
         setIsLoading(false);
         return;
       }
-      
+
       try {
         setIsLoading(true);
         const result: TransactionResult = await getUserTransactions(address);
@@ -63,21 +65,36 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
           throw new Error(result.message);
         }
         const userTransactions = result.data;
-        const formattedPosts = userTransactions.map((tx: any) => ({
-          id: tx.id.toString(),
-          ipfsHash: tx.ipfsHash || '',
-          title: tx.title || "Untitled Post",
-          content: tx.description || "No content provided.",
-          type: Number(tx.mediaType) === 1 ? 'image' : Number(tx.mediaType) === 2 ? 'video' : 'text',
-          transBlock: Number(tx.transBlock),
-          likes: Number(tx.likes || 0),
-          comments: 0,
-          timestamp: Number(tx.timestamp) * 1000 || Date.now(),
-          blockCategory: tx.blockCategory || null,
-          blockId: tx.blockId || null,
+        const formattedPosts = await Promise.all(userTransactions.map(async (tx: any) => {
+          try {
+            const transactionId = BigInt(tx.id);
+            const donorsResult: TransactionResult = await getDonorsAndDonations(transactionId);
+            let totalDonations = BigInt(0);
+            if (donorsResult.success && donorsResult.data) {
+              const { donors: fetchedDonors, total } = donorsResult.data;
+              totalDonations = BigInt(total);
+            }
+            return {
+              id: tx.id.toString(),
+              ipfsHash: tx.ipfsHash || '',
+              title: tx.title || "Untitled Post",
+              content: tx.description || "No content provided.",
+              type: Number(tx.mediaType) === 1 ? 'image' : Number(tx.mediaType) === 2 ? 'video' : 'text',
+              transBlock: Number(tx.transBlock),
+              likes: Number(tx.likes || 0),
+              comments: 0,
+              timestamp: Number(tx.timestamp) * 1000 || Date.now(),
+              blockCategory: tx.blockCategory || null,
+              blockId: tx.blockId || null,
+              totalDonations: totalDonations,
+            };
+          } catch (error) {
+            console.error("Error fetching donors for transaction:", error);
+            return null;
+          }
         }));
 
-        setPosts(formattedPosts);
+        setPosts(formattedPosts.filter((post): post is CanvasTransItem => post !== null));
         await fetchUserBlocks();
       } catch (error) {
         console.error("Error fetching transactions:", error);
@@ -109,6 +126,23 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
     fetchUserTransactions();
   }, [isConnected, address]);
 
+  const handleWithdraw = async (postId: string) => {
+    try {
+      const result: TransactionResult = await withdrawDonations(BigInt(postId));
+      if (result.success) {
+        setPosts(prevPosts => prevPosts.map(post => 
+          post.id === postId ? { ...post, totalDonations: BigInt(0) } : post
+        ));
+        setAlertState({ message: "Withdrawal successful!", type: 'success' });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      setAlertState({ message: "Withdrawal failed. Please try again.", type: 'error' });
+    }
+  };
+
   const handleAddToBlockClick = (postId: string) => {
     setShowBlockDropdown(prev => ({
       ...prev,
@@ -125,10 +159,10 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
       setShowBlockDropdown(prev => ({ ...prev, [postId]: false }));
 
       const selectedBlock = blocks.find(block => block.id === selectedBlockId);
-      
-      setPosts(prevPosts => prevPosts.map(post => 
-        post.id === postId 
-          ? { ...post, transBlock: Number(selectedBlockId), blockCategory: selectedBlock?.category || null, blockId: selectedBlockId } 
+
+      setPosts(prevPosts => prevPosts.map(post =>
+        post.id === postId
+          ? { ...post, transBlock: Number(selectedBlockId), blockCategory: selectedBlock?.category || null, blockId: selectedBlockId }
           : post
       ));
       setAlertState({ message: "Transaction added to block successfully!", type: 'success' });
@@ -140,9 +174,9 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
 
   const getPostIcon = (type: string) => {
     switch (type) {
-      case 'image': return <ImageIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />;
-      case 'video': return <Film className="w-5 h-5 text-green-500 dark:text-green-400" />;
-      case 'text': return <FileText className="w-5 h-5 text-purple-500 dark:text-purple-400" />;
+      case 'image': return <ImageIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" aria-label="Image post" />;
+      case 'video': return <Film className="w-5 h-5 text-green-500 dark:text-green-400" aria-label="Video post" />;
+      case 'text': return <FileText className="w-5 h-5 text-purple-500 dark:text-purple-400" aria-label="Text post" />;
       default: return null;
     }
   };
@@ -150,7 +184,7 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary" aria-label="Loading feed"></div>
       </div>
     )
   }
@@ -186,9 +220,15 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
                     {getPostIcon(post.type)}
                     <h3 className="text-lg font-semibold truncate">{post.title}</h3>
                   </div>
-                  <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full px-2 py-1">
-                    {new Date(post.timestamp).toLocaleDateString()}
-                  </span>
+                  <div className='flex items-center justify-between space-x-4'>
+                    <span className="text-start text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full px-2 py-1">
+                      {new Date(post.timestamp).toLocaleDateString()}
+                    </span>
+                    <div className="flex items-center font-semibold text-sm text-green-500">
+                      <DollarSign className="h-4 w-4" />
+                      <p>{(Number(post.totalDonations) / 1e18).toFixed(4)} ETH</p>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {post.type === 'image' && (
@@ -212,30 +252,40 @@ export default function UserFeed({ transactions: initialTransactions }: UserFeed
                   <p className="text-muted-foreground line-clamp-3">{post.content}</p>
                 </CardContent>
                 <CardFooter className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary">
-                      <Heart className="w-4 h-4" />
-                      <span>{post.likes}</span>
-                    </Button>
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary">
-                      <MessageCircle className="w-4 h-4" />
-                      <span>{post.comments}</span>
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary">
+                    <Heart className="w-4 h-4" />
+                    <span>{post.likes}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{post.comments}</span>
+                  </Button>
+
                   {post.transBlock === 0 ? (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleAddToBlockClick(post.id)}
-                      className="flex items-center space-x-1 bg-transparent border-gray-300 dark:border-gray-600 text-primary dark:text-primary-light hover:bg-primary/10 dark:hover:bg-primary-light/10"
+                      className="flex items-center mr-2 space-x-1 bg-transparent border-gray-300 dark:border-gray-600 text-primary dark:text-primary-light hover:bg-primary/10 dark:hover:bg-primary-light/10"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Add to Block</span>
                     </Button>
                   ) : (
-                    <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1">
-                      {post.blockCategory || 'Added to Block'}
+                    <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-1 mr-2">
+                      {post.blockCategory || 'InBlock'}
                     </span>
+                  )}
+
+                  {post.totalDonations > BigInt(0) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleWithdraw(post.id)}
+                      className="flex text-sm items-center space-x-1 bg-transparent border-gray-300 dark:border-gray-600 text-primary dark:text-primary-light hover:bg-primary/10 dark:hover:bg-primary-light/10"
+                    >
+                      Withdraw
+                    </Button>
                   )}
                 </CardFooter>
                 <AnimatePresence>

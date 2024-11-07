@@ -1,8 +1,8 @@
-import { CanvasTransLogo } from './CanvasTransLogo'
 import React, { useState, useEffect } from 'react'
 import { motion, useAnimation } from 'framer-motion'
 import Link from 'next/link'
 import { Facebook, Twitter, Github } from 'lucide-react'
+import { CanvasTransLogo } from './CanvasTransLogo'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -20,13 +20,13 @@ export default function Footer() {
               Empowering creators with decentralized innovation. Share, secure, and monetize your content effortlessly.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <a href="https://facebook.com/canvaTrans" className="text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 <Facebook className="h-6 w-6" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <a href="https://x.com/canvaTrans" className="text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 <Twitter className="h-6 w-6" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <a href="https://github.com/chiemezie1/CanvasTransHub.git" className="text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 <Github className="h-6 w-6" />
               </a>
             </div>
@@ -40,10 +40,10 @@ export default function Footer() {
               <Link href="/user-block" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 Manage your Space
               </Link>
-              <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <Link href="/#features" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 Features
               </Link>
-              <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <Link href="/about-us-page" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 About Us
               </Link>
             </nav>
@@ -51,17 +51,20 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-foreground-dark">Legal</h3>
             <nav className="flex flex-col space-y-2">
-              <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <Link href="/terms" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 Terms of Service
               </Link>
-              <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <Link href="/privacy" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 Privacy Policy
               </Link>
-              <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
-                Cookie Policy
-              </Link>
-              <Link href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+              <Link href="/contact" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                 Contact Us
+              </Link>
+              <Link href="/authors" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+                Authors
+              </Link>
+              <Link href="/license" className="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
+                License
               </Link>
             </nav>
           </div>

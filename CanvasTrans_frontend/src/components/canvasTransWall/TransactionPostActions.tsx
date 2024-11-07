@@ -23,7 +23,15 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { TransactionPostActionsProps, Donor, Comment } from '@/types/types'
+import { Donor, Comment } from '@/types/types'
+
+export interface TransactionPostActionsProps {
+    item: {
+        id: bigint;
+        creator: string;
+        likes: bigint;
+    }
+  }
 
 interface TransactionResult<T> {
     success: boolean;

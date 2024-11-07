@@ -6,22 +6,21 @@ import { getUserProfile } from "@/contracts/contractInteractions"
 import TransactionPostDetails from './TransactionPostDetails'
 import TransactionPostActions from './TransactionPostActions'
 import UserProfileModal from './UserProfileModal'
-import { UserProfileModalProps } from '@/types/types'
+import { CanvasTransItem } from '@/types/types'
 
-interface TransactionPostProps extends UserProfileModalProps {
+interface TransactionPostProps {
+  item: CanvasTransItem
   isLoading: boolean
 }
 
-interface TransactionResult<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
+interface UserProfile {
+  profilePicture: string
 }
 
-interface UserProfile {
-  name: string;
-  bio: string;
-  profilePicture: string;
+interface TransactionResult<T> {
+  success: boolean
+  message: string
+  data?: T
 }
 
 export default function TransactionPost({ item, isLoading }: TransactionPostProps) {
@@ -33,9 +32,9 @@ export default function TransactionPost({ item, isLoading }: TransactionPostProp
     const fetchUserProfile = async () => {
       setIsContentLoading(true)
       try {
-        const profileResult: TransactionResult<UserProfile> = await getUserProfile(item.creator)
-        if (profileResult.success && profileResult.data) {
-          setUserProfile(profileResult.data)
+        const result: TransactionResult<UserProfile> = await getUserProfile(item.creator)
+        if (result.success && result.data) {
+          setUserProfile({ profilePicture: result.data.profilePicture || '' })
         } else {
           setUserProfile(null)
         }
@@ -63,7 +62,7 @@ export default function TransactionPost({ item, isLoading }: TransactionPostProp
     <div className="mt-16 bg-background dark:bg-background-dark rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
       <div className="p-6 space-y-6">
         <div className="flex items-start space-x-4">
-          {userProfile && (
+          {userProfile && userProfile.profilePicture && (
             <img
               src={`https://gateway.pinata.cloud/ipfs/${userProfile.profilePicture}`}
               alt="User Profile"
@@ -78,6 +77,7 @@ export default function TransactionPost({ item, isLoading }: TransactionPostProp
       {isProfileModalOpen && (
         <UserProfileModal
           userAddress={item.creator}
+          item={item}
           onClose={() => setIsProfileModalOpen(false)}
         />
       )}

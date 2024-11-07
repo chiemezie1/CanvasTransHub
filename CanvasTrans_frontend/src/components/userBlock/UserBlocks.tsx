@@ -7,14 +7,14 @@ import { getUserBlocks, getATransactions } from "@/contracts/contractInteraction
 import { useAccount } from "wagmi"
 import { MessageAlert } from '../MessageAlert'
 
-interface Post {
+export interface Post {
   id: string
   title: string
   type: string
   likes: number
 }
 
-interface Block {
+export interface Block {
   id: string
   name: string
   description: string
@@ -24,7 +24,7 @@ interface Block {
   posts: Post[]
 }
 
-interface TransactionResult {
+export interface TransactionResult {
   success: boolean
   message: string
   data?: any
