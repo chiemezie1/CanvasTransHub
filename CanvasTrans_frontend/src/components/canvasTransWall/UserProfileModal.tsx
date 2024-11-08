@@ -18,9 +18,15 @@ type UserProfileModalType = {
   onClose: () => void;
 }
 
+interface UserProfile {
+  username: string;
+  bio: string;
+  profilePicture: string;
+}
+
 export default function UserProfileModal({ userAddress, onClose }: UserProfileModalType) {
   const { address: connectedAccount, isConnected } = useAccount();
-  const [userProfile, setUserProfile] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isFollowingUser, setIsFollowingUser] = useState<boolean>(false)
@@ -28,8 +34,16 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const profile = await getUserProfile(userAddress)
-        setUserProfile(profile)
+        const result: TransactionResult<[string, string, string]> = await getUserProfile(userAddress)
+        if (result.success && result.data) {
+          setUserProfile({
+            username: result.data[0],
+            bio: result.data[1],
+            profilePicture: result.data[2]
+          })
+        } else {
+          throw new Error(result.message || 'Failed to fetch user profile')
+        }
 
         if (isConnected && connectedAccount) {
           const followingStatus: TransactionResult<boolean> = await isFollowing(connectedAccount, userAddress)
@@ -43,7 +57,6 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
     fetchUserProfile()
   }, [userAddress, connectedAccount, isConnected])
 
-
   const handleFollow = async () => {
     if (userAddress.toLowerCase() === connectedAccount?.toLowerCase()) {
       setError("You cannot follow yourself.")
@@ -52,9 +65,13 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
     
     setLoading(true)
     try {
-      await followUser(userAddress)
-      setIsFollowingUser(true) // Update following status
-      setError(null)
+      const result: TransactionResult<void> = await followUser(userAddress)
+      if (result.success) {
+        setIsFollowingUser(true)
+        setError(null)
+      } else {
+        throw new Error(result.message || 'Failed to follow user')
+      }
     } catch (error) {
       console.error("Failed to follow user:", error)
       setError("Failed to follow user. Please try again.")
@@ -76,14 +93,14 @@ export default function UserProfileModal({ userAddress, onClose }: UserProfileMo
         {userProfile ? (
           <div className="space-y-4 p-4">
             <img
-              src={`https://gateway.pinata.cloud/ipfs/${userProfile[2]}`}
+              src={`https://gateway.pinata.cloud/ipfs/${userProfile.profilePicture}`}
               alt="User Profile"
               className="w-24 h-24 rounded-full mx-auto border-2 border-gray-300 dark:border-gray-600"
             />
             <h2 className="text-xl font-semibold text-center text-gray-900 dark:text-gray-200">
-              {userProfile[0] || 'canvasTrans User'} {/* Default name when not provided */}
+              {userProfile.username || 'canvasTrans User'}
             </h2>
-            <p className="text-center text-gray-700 dark:text-gray-300">{userProfile[1]}</p>
+            <p className="text-center text-gray-700 dark:text-gray-300">{userProfile.bio}</p>
             <Button
               onClick={handleFollow}
               disabled={loading}
