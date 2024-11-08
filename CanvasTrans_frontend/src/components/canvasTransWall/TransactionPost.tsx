@@ -11,6 +11,8 @@ import { CanvasTransItem } from '@/types/types'
 interface TransactionPostProps {
   item: CanvasTransItem
   isLoading: boolean
+  userAddress: `0x${string}`
+  onClose: () => void;
 }
 
 interface UserProfile {
@@ -77,7 +79,6 @@ export default function TransactionPost({ item, isLoading }: TransactionPostProp
       {isProfileModalOpen && (
         <UserProfileModal
           userAddress={item.creator}
-          item={item}
           onClose={() => setIsProfileModalOpen(false)}
         />
       )}

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { getUserProfile, followUser, isFollowing } from "@/contracts/contractInteractions"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { UserProfileModalType } from '@/types/types'
 import { useAccount } from "wagmi"
 import { MessageAlert } from '../MessageAlert'
 
@@ -14,6 +13,10 @@ type TransactionResult<T> = {
   message?: string;
 }
 
+type UserProfileModalType = {
+  userAddress: `0x${string}`;
+  onClose: () => void;
+}
 
 export default function UserProfileModal({ userAddress, onClose }: UserProfileModalType) {
   const { address: connectedAccount, isConnected } = useAccount();

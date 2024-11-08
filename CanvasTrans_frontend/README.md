@@ -16,7 +16,6 @@ CanvaTrans is redefining digital content sharing by leveraging Web3 technology t
 - [API Integration](#api-integration)
 - [State Management](#state-management)
 - [Styling](#styling)
-- [Testing](#testing)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
 - [License](#license)
@@ -45,14 +44,14 @@ CanvaTrans is a decentralized content-sharing platform built on Web3 technology 
 - RainbowKit 2.1.5
 - wagmi 2.12.10
 - Framer Motion 11.11.11
-- shadcn UI (various components)
+- Radix UI (various components)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js (version specified in `.nvmrc` or latest stable)
-- Yarn 1.22.22 or later
+- Yarn 1.2 or later
 
 ### Installation
 
@@ -144,13 +143,10 @@ The project primarily uses React's built-in state management (useState, useEffec
 
 This project uses Tailwind CSS for styling, with custom configurations in `tailwind.config.js`. Additional styling is achieved through:
 
-- shadcn UI library for accessible and customizable UI components
+- Radix UI components for accessible UI elements
 - Framer Motion for animations
 - Custom UI components in the `components/ui/` directory
 
-## Testing
-
-[Describe the testing setup once implemented]
 
 ## Deployment
 
@@ -185,7 +181,7 @@ This project is licensed under the [MIT License](LICENSE).
 - [wagmi](https://wagmi.sh)
 - [Next.js](https://nextjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [shadcn/ui](https://ui.shadcn.com/)
+- [Radix UI](https://radix-ui.com/)
 - [Framer Motion](https://www.framer.com/motion/)
 - [Pinata](https://pinata.cloud/)
 

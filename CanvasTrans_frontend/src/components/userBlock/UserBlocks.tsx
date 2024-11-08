@@ -30,11 +30,7 @@ export interface TransactionResult {
   data?: any
 }
 
-export interface UserBlocksProps {
-  blocks: Block[]
-}
-
-export default function UserBlocks({ blocks: initialBlocks }: UserBlocksProps) {
+export default function UserBlocks() {
  const { address, isConnected } = useAccount()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null)
