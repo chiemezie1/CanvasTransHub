@@ -38,7 +38,7 @@ export default function Hero() {
             className="absolute"
             style={{
               top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`, 
               width: `${Math.max(64, Math.random() * 128)}px`,
               height: `${Math.max(64, Math.random() * 128)}px`,
             }}
