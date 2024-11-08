@@ -1,8 +1,8 @@
 # CanvaTrans: Revolutionizing Content Sharing with Web3 Technology
 
 <div align="center">
-  <a href="https://github.com/chiemezie1/landregistry.git">
-    <img src='CanvasTrans_frontend/src/components/CanvasTransLogo' alt="Logo" width="80" height="80">
+  <a href="https://github.com/chiemezie1/CanvasTransHub.git">
+    <img src='src/components/images/canvastrans_logo.svg' alt="Logo" width="80" height="80">
   </a>
   <h3 align="center">CanvaTrans Dapp</h3>
   <p align="center">
