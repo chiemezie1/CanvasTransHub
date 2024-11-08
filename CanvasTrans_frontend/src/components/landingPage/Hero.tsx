@@ -29,7 +29,7 @@ export default function Hero() {
   }, [controls])
 
   return (
-    <section className="relative pt-16 sm:pt-24 lg:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-b from-background to-background/80 dark:from-background-dark dark:to-background-dark/80">
+    <section className="relative pt-40 sm:pt-48 lg:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-b from-background to-background/80 dark:from-background-dark dark:to-background-dark/80">
       {/* Animated background chat icons */}
       <div className="absolute inset-0 z-0">
         {chatIcons.map((icon, index) => (
@@ -64,7 +64,7 @@ export default function Hero() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-secondary">
             Empowering Creators with Decentralized Innovation
           </h1>
           <p className="text-lg sm:text-xl mb-8 max-w-2xl mx-auto text-foreground/80 dark:text-foreground-dark/80">
