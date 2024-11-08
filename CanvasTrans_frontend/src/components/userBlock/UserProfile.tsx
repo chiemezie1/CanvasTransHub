@@ -6,6 +6,8 @@ import { Sun, Moon, User, FileText, Boxes, Users } from 'lucide-react'
 import ProfileUpdateForm from './ProfileUpdateForm'
 import UserFeed from './UserFeed'
 import UserBlocks from './UserBlocks'
+import FollowerModel from './FollowerModel'
+import UserProfileModal from '@/components/UserProfileModal'
 import { CanvasTransLogo } from '@/components/CanvasTransLogo'
 import Link from 'next/link'
 import { useAccount } from "wagmi"
@@ -16,7 +18,7 @@ interface UserProfileData {
   username: string
   bio: string
   profilePicture: string
-  walletAddress?: string
+  walletAddress?: `0x${string}`
   followers: number
   following: number
 }
@@ -40,7 +42,7 @@ interface Block {
   name: string
   description: string
   category: string
-  owner: string
+  owner: `0x${string}`
   transactionIds: bigint[]
   posts: Post[]
 }
@@ -66,6 +68,10 @@ export default function UserProfile() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [alertState, setAlertState] = useState<{ message: string; type: 'info' | 'success' | 'warning' | 'error' | null }>({ message: '', type: null })
   const [isLoading, setIsLoading] = useState(true)
+  const [followers, setFollowers] = useState<`0x${string}`[]>([])
+  const [following, setFollowing] = useState<`0x${string}`[]>([])
+  const [showFollowerModel, setShowFollowerModel] = useState<'followers' | 'following' | null>(null)
+  const [selectedUserAddress, setSelectedUserAddress] = useState<`0x${string}` | null>(null)
 
   const { address, isConnected } = useAccount()
 
@@ -82,6 +88,8 @@ export default function UserProfile() {
           const profileResult: TransactionResult<[string, string, string]> = await getUserProfile(address)
           const followersResult: TransactionResult<readonly string[]> = await getFollowers(address)
           const followingResult: TransactionResult<readonly string[]> = await getFollowing(address)
+          console.log(followersResult)
+          console.log(followingResult)
   
           if (profileResult.success && profileResult.data) {
             setUserProfile({
@@ -92,6 +100,13 @@ export default function UserProfile() {
               followers: followersResult.success && followersResult.data ? followersResult.data.length : 0,
               following: followingResult.success && followingResult.data ? followingResult.data.length : 0
             })
+
+            if (followersResult.success && followersResult.data) {
+              setFollowers(followersResult.data.filter((addr): addr is `0x${string}` => addr.startsWith('0x')))
+            }
+            if (followingResult.success && followingResult.data) {
+              setFollowing(followingResult.data.filter((addr): addr is `0x${string}` => addr.startsWith('0x')))
+            }
 
             // Fetch user transactions and blocks
             const transactionsResult: TransactionResult<readonly CanvasTransItem[]> = await getUserTransactions(address)
@@ -130,6 +145,14 @@ export default function UserProfile() {
     setIsDarkMode(newDarkModeState)
     localStorage.setItem('theme', newDarkModeState ? 'dark' : 'light')
     document.documentElement.classList.toggle('dark', newDarkModeState)
+  }
+
+  const openUserProfile = (address: `0x${string}`) => {
+    setSelectedUserAddress(address)
+  }
+
+  const closeUserProfile = () => {
+    setSelectedUserAddress(null)
   }
 
   if (isLoading) {
@@ -203,13 +226,19 @@ export default function UserProfile() {
                       </div>
                       
                       <div className="mt-2 flex flex-wrap justify-center sm:justify-start gap-4 text-sm">
-                        <div className="flex items-center">
+                        <div 
+                          className="flex items-center cursor-pointer hover:text-primary"
+                          onClick={() => setShowFollowerModel('followers')}
+                        >
                           <Users className="w-4 h-4 mr-2 text-green-700 dark:text-text-green-400" />
-                          <span>{userProfile.followers} Followers</span>
+                          <span>{followers.length} Followers</span>
                         </div>
-                        <div className="flex items-center">
-                          <Users  className="w-4 h-4 mr-2  text-green-700 dark:text-text-green-400" />
-                          <span>{userProfile.following} Following</span>
+                        <div 
+                          className="flex items-center cursor-pointer hover:text-primary"
+                          onClick={() => setShowFollowerModel('following')}
+                        >
+                          <Users className="w-4 h-4 mr-2 text-green-700 dark:text-text-green-400" />
+                          <span>{following.length} Following</span>
                         </div>
                       </div>
                     </div>
@@ -247,7 +276,24 @@ export default function UserProfile() {
             )}
           </motion.div>
         </AnimatePresence>
+
+        {showFollowerModel && (
+          <FollowerModel
+            addresses={showFollowerModel === 'followers' ? followers : following}
+            type={showFollowerModel}
+            onUserClick={openUserProfile}
+            onClose={() => setShowFollowerModel(null)}
+          />
+        )}
       </main>
+
+      {selectedUserAddress && (
+        <UserProfileModal
+          userAddress={selectedUserAddress}
+          onClose={closeUserProfile}
+        />
+      )}
+
       {alertState.type && (
         <MessageAlert
           message={alertState.message}

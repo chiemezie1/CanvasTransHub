@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { getUserProfile } from "@/contracts/contractInteractions"
 import TransactionPostDetails from './TransactionPostDetails'
 import TransactionPostActions from './TransactionPostActions'
-import UserProfileModal from './UserProfileModal'
+import UserProfileModal from '../UserProfileModal'
 import { CanvasTransItem } from '@/types/types'
 
 interface TransactionPostProps {

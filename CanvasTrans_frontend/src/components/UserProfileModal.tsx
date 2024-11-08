@@ -5,7 +5,7 @@ import { getUserProfile, followUser, isFollowing } from "@/contracts/contractInt
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAccount } from "wagmi"
-import { MessageAlert } from '../MessageAlert'
+import { MessageAlert } from './MessageAlert'
 
 type TransactionResult<T> = {
   success: boolean;

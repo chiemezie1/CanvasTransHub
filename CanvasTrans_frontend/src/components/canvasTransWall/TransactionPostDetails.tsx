@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { CanvasTransItem } from '@/types/types'
 import { useState, useEffect } from 'react'
 import { getUserProfile } from "@/contracts/contractInteractions"
-import UserProfileModal from './UserProfileModal'
+import UserProfileModal from '../UserProfileModal'
 import { MessageAlert } from '@/components/MessageAlert'
 
 interface TransactionPostDetailsProps {
