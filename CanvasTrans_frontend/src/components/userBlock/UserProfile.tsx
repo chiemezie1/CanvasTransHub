@@ -239,8 +239,8 @@ export default function UserProfile() {
                   </div>
                   <div className="p-6">
                     {activeTab === 'profile' && <ProfileUpdateForm onProfileUpdate={setUserProfile} />}
-                    {activeTab === 'feed' && <UserFeed transactions={transactions} />}
-                    {activeTab === 'blocks' && <UserBlocks blocks={blocks} />}
+                    {activeTab === 'feed' && <UserFeed />}
+                    {activeTab === 'blocks' && <UserBlocks />}
                   </div>
                 </div>
               </>
