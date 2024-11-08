@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://github.com/chiemezie1/CanvasTransHub.git">
-    <img src='@/components/images/canvastrans_logo.svg' alt="Logo" width="80" height="80">
+    <img src='@/images/canvastrans_logo.svg' alt="Logo" width="80" height="80">
   </a>
   <h3 align="center">CanvaTrans Dapp</h3>
   <p align="center">
