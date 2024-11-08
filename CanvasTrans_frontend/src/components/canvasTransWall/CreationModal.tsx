@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TransactionForm, BlockForm } from './CreationModalForm'
 import { createTransaction, createBlock } from '@/contracts/contractInteractions'
-import uploadToPinata from "@/lib/PinataService"
+import { uploadToPinata } from "@/lib/PinataService"
 import { useAccount } from "wagmi"
 import { MessageAlert } from '../MessageAlert'
 
