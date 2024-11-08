@@ -88,8 +88,7 @@ export default function UserProfile() {
           const profileResult: TransactionResult<[string, string, string]> = await getUserProfile(address)
           const followersResult: TransactionResult<readonly string[]> = await getFollowers(address)
           const followingResult: TransactionResult<readonly string[]> = await getFollowing(address)
-          console.log(followersResult)
-          console.log(followingResult)
+
   
           if (profileResult.success && profileResult.data) {
             setUserProfile({
