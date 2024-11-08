@@ -36,12 +36,22 @@ export default function CanvasTransWall() {
     return false
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [retryCount, setRetryCount] = useState(0)
 
   const fetchTransactions = useCallback(async () => {
     setIsLoading(true)
     try {
       const transactions = await getPublicTransactions()
       const blocks = await getAllBlocks()
+
+      if (transactions.length === 0 && retryCount < 3) {
+        setRetryCount(prevCount => prevCount + 1)
+        setTimeout(fetchTransactions, 1000) // Retry after 1 second
+        return
+      }
+
+      console.log(transactions)
+      console.log(blocks)
 
       const formattedTransactions = (transactions ?? []).map(transaction => ({
         ...transaction,
@@ -68,25 +78,13 @@ export default function CanvasTransWall() {
       console.error("Error fetching data:", error)
     } finally {
       setIsLoading(false)
+      setRetryCount(0) // Reset retry count after successful fetch
     }
-  }, [selectedCategory])
+  }, [selectedCategory, retryCount])
 
   useEffect(() => {
     fetchTransactions()
   }, [fetchTransactions])
-
-  // These changes trigger the `fetchTransactions` function multiple times,
-  // ensuring that data is loaded.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSelectedCategory('Web3')
-      setTimeout(() => {
-        setSelectedCategory(null)
-      }, 100)
-    }, 100)
-
-    return () => clearTimeout(timer)
-  }, [])
 
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode(prevMode => {

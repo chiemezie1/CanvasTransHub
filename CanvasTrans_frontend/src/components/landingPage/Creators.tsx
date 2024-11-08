@@ -62,7 +62,7 @@ const Creators = () => {
       setCreators(validProfiles)
 
       if (validProfiles.length === 0) {
-        setError('No creators found. Be the first to create content!')
+        setError('No creators found. Please check if wallect is connected!')
       }
     } catch (error) {
       console.error('Error fetching creators:', error)
