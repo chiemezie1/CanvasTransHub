@@ -14,6 +14,8 @@
 
 `CanvaTrans` is a decentralized content-sharing platform built on Arbitrum (a Layer 2 scaling solution) Blockchain. It empowers creators to truly own, manage, and monetize their digital content in ways never before possible. By the use blockchain technology, CanvaTrans creates a transparent, secure, and creator-centric ecosystem that changes how digital content is shared and monetized.
 
+[![CanvaTrans demo video](https://img.youtube.com/vi/DP1HrF6w-9s/0.jpg)](https://youtu.be/DP1HrF6w-9s)
+
 ## The Problem We Solve
 
 In today's digital landscape, creators face numerous challenges that hinder their ability to thrive, here are the the problems:

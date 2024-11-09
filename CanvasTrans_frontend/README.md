@@ -1,5 +1,7 @@
 # CanvaTrans: Revolutionizing Content Sharing with Web3 Technology
 
+[![CanvaTrans demo video](https://img.youtube.com/vi/DP1HrF6w-9s/0.jpg)](https://youtu.be/DP1HrF6w-9s)
+
 CanvaTrans is redefining digital content sharing by leveraging Web3 technology to create a decentralized platform that prioritizes transparency, ownership, direct earnings, and creator autonomy.
 
 ## Table of Contents
