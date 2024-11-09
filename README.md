@@ -194,9 +194,8 @@ For detailed setup instructions:
 
 ## Contact and Community
 
-- Website: [https://canvatrans.com](https://canvatrans.com)
-- Twitter: [@CanvaTrans](https://twitter.com/CanvaTrans)
-- Discord: [CanvaTrans Community](https://discord.gg/canvatrans)
+- Website: [https://canvas-trans-hub.vercel.app/](https://canvas-trans-hub.vercel.app/).
+- Twitter: [@CanvaTrans](https://x.com/canvaTrans)
 - GitHub: [CanvaTrans](https://github.com/chiemezie1)
 
 We're excited to have you on board as we revolutionize the creator economy with Web3 technology!
